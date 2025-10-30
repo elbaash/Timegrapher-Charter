@@ -91,19 +91,18 @@ body {
   body {
     background-color: #fff !important;
     color: #000 !important;
-    padding: 0 !important;
-    margin: 0 !important;
   }
   .print-only {
     display: block !important;
   }
-  .no-print {
+  .no-print, .print-hidden {
     display: none !important;
   }
   main {
     padding: 0 !important;
     margin: 0 !important;
   }
+  .print-container {
+    display: block !important;
+  }
 }
-
-    

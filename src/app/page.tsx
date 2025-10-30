@@ -12,9 +12,7 @@ import { ManualEntryForm } from "@/components/manual-entry-form";
 import { UploadCloud, PenSquare, HelpCircle, List, Trash2, PlusCircle, BookUser } from "lucide-react";
 import { Faq } from "@/components/faq";
 import { ExtractedDataDialog } from "@/components/extracted-data-dialog";
-import { SidebarProvider, Sidebar, SidebarTrigger, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuAction } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import {
@@ -54,6 +52,7 @@ export default function Home() {
   const [extractedData, setExtractedData] = useState<AnalyzedImage[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
+  const [mainTab, setMainTab] = useState("new");
 
   const activeSession = useMemo(() => sessions.find(s => s.id === activeSessionId), [sessions, activeSessionId]);
   
@@ -84,7 +83,7 @@ export default function Home() {
   const handleDialogSave = (editedData: AnalyzedImage[]) => {
      const newReadings: TimegrapherReading[] = editedData.map(item => ({
       id: `${new Date().toISOString()}-${Math.random()}`, // simple unique id
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
       // only extract the reading data, not customer/ref
       rate: item.data.rate,
       amplitude: item.data.amplitude,
@@ -109,7 +108,7 @@ export default function Home() {
   const handleManualAdd = (data: Omit<TimegrapherReading, "id" | "timestamp">) => {
     const newReading: TimegrapherReading = {
       id: new Date().toISOString(), // simple unique id
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
       // only extract reading data, not customer/ref
       rate: data.rate,
       amplitude: data.amplitude,
@@ -135,6 +134,7 @@ export default function Home() {
       title: "New Session Started",
       description: "You can now add readings for the new watch."
     });
+    setMainTab("new");
   }
 
   const handleDeleteSession = (sessionId: string) => {
@@ -154,117 +154,129 @@ export default function Home() {
     });
   };
 
+  const selectSession = (sessionId: string) => {
+    setActiveSessionId(sessionId);
+    setMainTab("new");
+  }
+
   const readingsToDisplay = activeSession ? activeSession.readings : [];
   const customerNameToDisplay = activeSession ? activeSession.customerName : "";
   const refNumberToDisplay = activeSession ? activeSession.refNumber : "";
 
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader>
-          <div className="flex items-center gap-2">
-            <BookUser />
-            <h2 className="text-lg font-semibold">Sessions</h2>
-          </div>
-          <p className="text-sm text-sidebar-foreground/70">Saved watch records</p>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
-            {sessions.map(session => (
-              <SidebarMenuItem key={session.id}>
-                <SidebarMenuButton 
-                  onClick={() => setActiveSessionId(session.id)} 
-                  isActive={session.id === activeSessionId}
-                  className="h-auto flex-col items-start p-2"
-                >
-                  <div className="font-semibold">{session.customerName}</div>
-                  <div className="flex justify-between w-full text-xs text-sidebar-foreground/70">
-                    <span>{session.refNumber}</span>
-                    <span>{format(new Date(session.createdAt), "MM/dd/yy")}</span>
-                  </div>
-                </SidebarMenuButton>
-                 <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <SidebarMenuAction showOnHover>
-                        <Trash2 />
-                      </SidebarMenuAction>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will permanently delete the session for <span className="font-bold">{session.customerName} ({session.refNumber})</span>. This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDeleteSession(session.id)}>Delete</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarContent>
-        <SidebarFooter>
-          <Button onClick={handleNewSession} className="w-full">
-            <PlusCircle /> New Session
-          </Button>
-        </SidebarFooter>
-      </Sidebar>
+    <div className="flex min-h-screen w-full flex-col bg-background">
+      <AppHeader />
+      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="new">New</TabsTrigger>
+            <TabsTrigger value="sessions">Sessions</TabsTrigger>
+            <TabsTrigger value="faq">FAQ</TabsTrigger>
+          </TabsList>
 
-      <div className="flex min-h-screen w-full flex-col bg-background">
-        <AppHeader>
-           <SidebarTrigger className="md:hidden" />
-           <Separator orientation="vertical" className="h-8 md:hidden" />
-        </AppHeader>
-        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-          <div className="no-print">
-            <Tabs defaultValue="upload" className="grid gap-4">
+          <TabsContent value="new" className="space-y-4">
+             <div className="print-hidden">
               <Card>
-                <CardHeader>
-                  <CardTitle className="font-headline">Analyze Timegrapher Data</CardTitle>
-                  <CardDescription>
-                    Upload photos, enter data manually, or learn how to use your timegrapher.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <TabsList className="grid w-full grid-cols-3 mb-6">
-                    <TabsTrigger value="upload"><UploadCloud className="mr-2" /> Upload Photos</TabsTrigger>
-                    <TabsTrigger value="manual"><PenSquare className="mr-2" /> Manual Entry</TabsTrigger>
-                    <TabsTrigger value="faq"><HelpCircle className="mr-2" /> FAQ</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="upload">
-                    <Uploader 
-                      onDataExtracted={handleDataExtracted} 
-                      isProcessing={isProcessing}
-                      setProcessing={setIsProcessing} 
-                    />
-                  </TabsContent>
-                  <TabsContent value="manual">
-                    <ManualEntryForm onDataAdded={handleManualAdd} />
-                  </TabsContent>
-                  <TabsContent value="faq">
-                    <Faq />
-                  </TabsContent>
-                </CardContent>
-              </Card>
-            </Tabs>
-          </div>
-          <ReadingsTable 
-            readings={readingsToDisplay} 
-            setReadings={setActiveReadings} 
-            customerName={customerNameToDisplay}
-            refNumber={refNumberToDisplay}
-          />
-          <ExtractedDataDialog
-            isOpen={isDialogOpen}
-            onOpenChange={setIsDialogOpen}
-            extractedData={extractedData}
-            onSave={handleDialogSave}
-          />
-        </main>
-      </div>
-    </SidebarProvider>
+                  <CardHeader>
+                    <CardTitle className="font-headline">Analyze Timegrapher Data</CardTitle>
+                    <CardDescription>
+                      Upload photos or enter data manually for the current session.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Tabs defaultValue="upload" className="w-full">
+                      <TabsList className="grid w-full grid-cols-2 mb-6">
+                        <TabsTrigger value="upload"><UploadCloud className="mr-2" /> Upload Photos</TabsTrigger>
+                        <TabsTrigger value="manual"><PenSquare className="mr-2" /> Manual Entry</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="upload">
+                        <Uploader 
+                          onDataExtracted={handleDataExtracted} 
+                          isProcessing={isProcessing}
+                          setProcessing={setIsProcessing} 
+                        />
+                      </TabsContent>
+                      <TabsContent value="manual">
+                        <ManualEntryForm onDataAdded={handleManualAdd} />
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                </Card>
+              </div>
+              <ReadingsTable 
+                readings={readingsToDisplay} 
+                setReadings={setActiveReadings} 
+                customerName={customerNameToDisplay}
+                refNumber={refNumberToDisplay}
+              />
+          </TabsContent>
+
+          <TabsContent value="sessions">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>All Sessions</CardTitle>
+                  <CardDescription>Select a session to view its details or create a new one.</CardDescription>
+                </div>
+                <Button onClick={handleNewSession}>
+                  <PlusCircle /> New Session
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {sessions.map(session => (
+                  <div key={session.id} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
+                     <Button 
+                        variant={session.id === activeSessionId ? 'secondary' : 'ghost'}
+                        onClick={() => selectSession(session.id)}
+                        className="h-auto flex-1 flex-col items-start p-2 text-left"
+                      >
+                        <div className="font-semibold">{session.customerName}</div>
+                        <div className="flex justify-between w-full text-xs text-muted-foreground">
+                          <span>{session.refNumber}</span>
+                          <span>{format(new Date(session.createdAt), "MM/dd/yy")}</span>
+                        </div>
+                      </Button>
+                      <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <Trash2 className="text-destructive"/>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently delete the session for <span className="font-bold">{session.customerName} ({session.refNumber})</span>. This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteSession(session.id)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="faq">
+            <Card>
+              <CardContent className="p-6">
+                <Faq />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        <ExtractedDataDialog
+          isOpen={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
+          extractedData={extractedData}
+          onSave={handleDialogSave}
+        />
+      </main>
+    </div>
   );
 }
