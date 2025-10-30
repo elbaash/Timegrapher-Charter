@@ -23,7 +23,7 @@ export type TimegrapherReadingData = {
 
 export type TimegrapherReading = {
   id: string;
-  timestamp: Date;
+  timestamp: Date | string;
 } & TimegrapherReadingData;
 
 export type AnalyzedImage = {

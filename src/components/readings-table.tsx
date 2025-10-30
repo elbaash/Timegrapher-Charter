@@ -44,7 +44,7 @@ export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
 
     let text = "ChronoGrapher Readings:\n\n";
     readings.forEach((reading, index) => {
-      text += `${index + 1}. ${format(reading.timestamp, 'Pp')}\n`;
+      text += `${index + 1}. ${format(new Date(reading.timestamp), 'Pp')}\n`;
       text += `   - Customer: ${reading.customerName}\n`;
       text += `   - Ref #: ${reading.refNumber}\n`;
       text += `   - Position: ${reading.position}\n`;
@@ -114,7 +114,7 @@ export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
             </CardDescription>
           </CardHeader>
         </div>
-        <CardContent className="print:pt-0">
+        <CardContent className="print:p-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -164,7 +164,7 @@ export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
               {readings.length > 0 ? (
                 readings.map((reading) => (
                   <TableRow key={reading.id}>
-                    <TableCell>{format(reading.timestamp, "Pp")}</TableCell>
+                    <TableCell>{format(new Date(reading.timestamp), "Pp")}</TableCell>
                     <TableCell>{reading.customerName}</TableCell>
                     <TableCell>{reading.refNumber}</TableCell>
                     <TableCell>{reading.position}</TableCell>
@@ -175,7 +175,7 @@ export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
                   </TableRow>
                 ))
               ) : (
-                <TableRow>
+                <TableRow className="no-print">
                   <TableCell colSpan={8} className="h-24 text-center">
                     No readings yet.
                   </TableCell>
