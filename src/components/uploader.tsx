@@ -1,17 +1,16 @@
 
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { analyzeImage } from "@/app/actions";
-import { UploadCloud, X, LoaderCircle, CheckCircle, Camera, Image as ImageIcon, Trash2 } from "lucide-react";
+import { UploadCloud, X, LoaderCircle, CheckCircle, Image as ImageIcon, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { POSITIONS, AnalyzedImage } from "@/types";
+import { AnalyzedImage } from "@/types";
 
 type UploaderProps = {
   onDataExtracted: (data: AnalyzedImage[]) => void;
@@ -107,8 +106,8 @@ export function Uploader({ onDataExtracted, isProcessing, setProcessing }: Uploa
             imageUrl: filePreview.previewUrl,
             data: {
               ...result.data,
-              customerName,
-              refNumber,
+              customerName: customerName || "",
+              refNumber: refNumber || "",
             }
           };
         })
@@ -169,7 +168,7 @@ export function Uploader({ onDataExtracted, isProcessing, setProcessing }: Uploa
     <div className="flex flex-col items-center gap-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-lg">
         <div>
-          <Label htmlFor="customerName">Customer Name</Label>
+          <Label htmlFor="customerName">Customer Name (Optional)</Label>
           <Input 
             id="customerName" 
             placeholder="John Doe" 
@@ -179,7 +178,7 @@ export function Uploader({ onDataExtracted, isProcessing, setProcessing }: Uploa
           />
         </div>
         <div>
-          <Label htmlFor="refNumber">Ref. Number</Label>
+          <Label htmlFor="refNumber">Ref. Number (Optional)</Label>
           <Input 
             id="refNumber" 
             placeholder="A123" 
@@ -245,7 +244,7 @@ export function Uploader({ onDataExtracted, isProcessing, setProcessing }: Uploa
             <Trash2 className="mr-2" /> Clear
           </Button>
         )}
-        <Button onClick={handleAnalyze} disabled={files.length === 0 || isProcessing || !customerName || !refNumber} className="w-full" size="lg">
+        <Button onClick={handleAnalyze} disabled={files.length === 0 || isProcessing} className="w-full" size="lg">
           {isProcessing ? (
             <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
           ) : null}
@@ -255,3 +254,5 @@ export function Uploader({ onDataExtracted, isProcessing, setProcessing }: Uploa
     </div>
   );
 }
+
+    
