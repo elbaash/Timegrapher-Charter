@@ -65,7 +65,6 @@ export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
           text: shareText,
         });
       } catch (error: any) {
-        // Don't log an error if the user cancels the share dialog (AbortError).
         if (error.name !== 'AbortError') {
           console.error("Error sharing:", error);
           toast({
@@ -105,7 +104,7 @@ export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
               <p className="text-center text-sm text-muted-foreground mb-6">{format(new Date(), 'PP')}</p>
           </div>
       </div>
-      <Card className="print:shadow-none print:border-none">
+      <Card className="no-print">
         <div className="no-print">
           <CardHeader>
             <CardTitle className="font-headline">Recorded Readings</CardTitle>
@@ -114,7 +113,7 @@ export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
             </CardDescription>
           </CardHeader>
         </div>
-        <CardContent className="print:p-0">
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -175,7 +174,7 @@ export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
                   </TableRow>
                 ))
               ) : (
-                <TableRow className="no-print">
+                <TableRow>
                   <TableCell colSpan={8} className="h-24 text-center">
                     No readings yet.
                   </TableCell>
@@ -184,7 +183,7 @@ export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
             </TableBody>
           </Table>
            {readings.length === 0 && (
-            <div className="flex flex-col items-center justify-center gap-4 py-16 no-print">
+            <div className="flex flex-col items-center justify-center gap-4 py-16">
               <ListX className="h-16 w-16 text-muted-foreground/50" />
               <h3 className="text-xl font-semibold tracking-tight font-headline">No Readings Yet</h3>
               <p className="text-muted-foreground">Upload an image or enter data manually to start.</p>
@@ -206,6 +205,36 @@ export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
           </Button>
         </CardFooter>
       </Card>
+      <div className="print-only hidden">
+         <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[180px]">Timestamp</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Ref #</TableHead>
+                <TableHead>Position</TableHead>
+                <TableHead>Rate (s/d)</TableHead>
+                <TableHead>Amplitude (°)</TableHead>
+                <TableHead>Beat Error (ms)</TableHead>
+                <TableHead>Lift Angle (°)</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {readings.map((reading) => (
+                <TableRow key={reading.id}>
+                  <TableCell>{format(new Date(reading.timestamp), "Pp")}</TableCell>
+                  <TableCell>{reading.customerName}</TableCell>
+                  <TableCell>{reading.refNumber}</TableCell>
+                  <TableCell>{reading.position}</TableCell>
+                  <TableCell className="font-medium">{reading.rate}</TableCell>
+                  <TableCell>{reading.amplitude}</TableCell>
+                  <TableCell>{reading.beatError}</TableCell>
+                  <TableCell>{reading.liftAngle}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+      </div>
     </>
   );
 }

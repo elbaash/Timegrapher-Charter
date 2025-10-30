@@ -89,8 +89,8 @@ body {
 
 @media print {
   body {
-    background-color: #fff;
-    color: #000;
+    background-color: #fff !important;
+    color: #000 !important;
   }
   .print-only {
     display: block !important;
