@@ -30,31 +30,19 @@ import {
 } from "@/components/ui/alert-dialog"
 
 const initialReadings: TimegrapherReading[] = [
-    {
-        id: new Date().toISOString() + '-1',
-        timestamp: new Date(new Date().getTime() - 5 * 60000),
-        position: 'Dial Up',
-        rate: '+4',
-        amplitude: '285',
-        beatError: '0.1',
-        liftAngle: '52',
-    },
-    {
-        id: new Date().toISOString() + '-2',
-        timestamp: new Date(new Date().getTime() - 4 * 60000),
-        position: 'Dial Down',
-        rate: '+6',
-        amplitude: '281',
-        beatError: '0.2',
-        liftAngle: '52',
-    },
+    { id: '2024-01-01T12:00:00.000Z-1', timestamp: '2024-01-01T12:00:00.000Z', position: 'Dial Up', rate: '+5', amplitude: '280', beatError: '0.2', liftAngle: '52' },
+    { id: '2024-01-01T12:01:00.000Z-2', timestamp: '2024-01-01T12:01:00.000Z', position: 'Dial Down', rate: '+3', amplitude: '275', beatError: '0.1', liftAngle: '52' },
+    { id: '2024-01-01T12:02:00.000Z-3', timestamp: '2024-01-01T12:02:00.000Z', position: 'Crown Up', rate: '-1', amplitude: '250', beatError: '0.4', liftAngle: '52' },
+    { id: '2024-01-01T12:03:00.000Z-4', timestamp: '2024-01-01T12:03:00.000Z', position: 'Crown Down', rate: '+2', amplitude: '255', beatError: '0.3', liftAngle: '52' },
+    { id: '2024-01-01T12:04:00.000Z-5', timestamp: '2024-01-01T12:04:00.000Z', position: 'Crown Left', rate: '+7', amplitude: '260', beatError: '0.2', liftAngle: '52' },
+    { id: '2024-01-01T12:05:00.000Z-6', timestamp: '2024-01-01T12:05:00.000Z', position: 'Crown Right', rate: '+6', amplitude: '262', beatError: '0.1', liftAngle: '52' },
 ];
 
 const initialSession: CustomerSession = {
   id: 'initial-session',
   customerName: 'Jane Smith',
   refNumber: 'A246',
-  createdAt: new Date().toISOString(),
+  createdAt: '2024-01-01T11:59:00.000Z',
   readings: initialReadings,
 }
 
@@ -280,5 +268,3 @@ export default function Home() {
     </SidebarProvider>
   );
 }
-
-    
