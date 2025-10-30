@@ -1,17 +1,16 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { AppHeader } from "@/components/app-header";
 import { Uploader } from "@/components/uploader";
 import { ReadingsTable } from "@/components/readings-table";
-import type { TimegrapherReading, AnalyzedImage, CustomerSession } from "@/types";
+import type { TimegrapherReading, AnalyzedImage, CustomerSession, Position, TimegrapherReadingData } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ManualEntryForm } from "@/components/manual-entry-form";
-import { UploadCloud, PenSquare, HelpCircle, List, Trash2, PlusCircle, BookUser } from "lucide-react";
+import { UploadCloud, PenSquare, HelpCircle, List, Trash2, PlusCircle, BookUser, FileCheck, Save, LoaderCircle, X } from "lucide-react";
 import { Faq } from "@/components/faq";
-import { ExtractedDataDialog } from "@/components/extracted-data-dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -25,7 +24,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import Image from "next/image";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { POSITIONS } from "@/types";
+
 
 const initialReadings: TimegrapherReading[] = [
     { id: '2024-01-01T12:00:00.000Z-1', timestamp: '2024-01-01T12:00:00.000Z', position: 'Dial Up', rate: '+5', amplitude: '280', beatError: '0.2', liftAngle: '52' },
@@ -50,9 +56,41 @@ export default function Home() {
   const [activeSessionId, setActiveSessionId] = useState<string>(initialSession.id);
   const [isProcessing, setIsProcessing] = useState(false);
   const [extractedData, setExtractedData] = useState<AnalyzedImage[]>([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
   const [mainTab, setMainTab] = useState("new");
+  const [editableData, setEditableData] = useState<AnalyzedImage[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+
+
+  useEffect(() => {
+    if (extractedData.length > 0) {
+      setEditableData(JSON.parse(JSON.stringify(extractedData))); // Deep copy
+    }
+  }, [extractedData]);
+
+  const handleInputChange = (index: number, field: keyof TimegrapherReadingData, value: string) => {
+    const newData = [...editableData];
+    newData[index] = { 
+        ...newData[index],
+        data: {
+            ...newData[index].data,
+            [field]: value 
+        }
+    };
+    setEditableData(newData);
+  };
+  
+  const handlePositionChange = (index: number, value: Position) => {
+    const newData = [...editableData];
+    newData[index] = { 
+        ...newData[index],
+        data: {
+            ...newData[index].data,
+            position: value 
+        }
+    };
+    setEditableData(newData);
+  };
 
   const activeSession = useMemo(() => sessions.find(s => s.id === activeSessionId), [sessions, activeSessionId]);
   
@@ -77,33 +115,47 @@ export default function Home() {
 
   const handleDataExtracted = (data: AnalyzedImage[]) => {
     setExtractedData(data);
-    setIsDialogOpen(true);
+    setMainTab("review");
   };
   
-  const handleDialogSave = (editedData: AnalyzedImage[]) => {
-     const newReadings: TimegrapherReading[] = editedData.map(item => ({
-      id: `${new Date().toISOString()}-${Math.random()}`, // simple unique id
-      timestamp: new Date().toISOString(),
-      // only extract the reading data, not customer/ref
-      rate: item.data.rate,
-      amplitude: item.data.amplitude,
-      beatError: item.data.beatError,
-      position: item.data.position,
-      liftAngle: item.data.liftAngle,
-    }));
-    
-    setActiveReadings(prev => [...newReadings, ...prev]);
+  const handleReviewSave = (editedData: AnalyzedImage[]) => {
+     setIsSaving(true);
+    // Simulate a save operation
+    setTimeout(() => {
+      const newReadings: TimegrapherReading[] = editedData.map(item => ({
+        id: `${new Date().toISOString()}-${Math.random()}`, // simple unique id
+        timestamp: new Date().toISOString(),
+        // only extract the reading data, not customer/ref
+        rate: item.data.rate,
+        amplitude: item.data.amplitude,
+        beatError: item.data.beatError,
+        position: item.data.position,
+        liftAngle: item.data.liftAngle,
+      }));
+      
+      setActiveReadings(prev => [...newReadings, ...prev]);
 
-    // Also update the session's customer/ref info from the first uploaded item
-    if(editedData.length > 0) {
-      setSessionDetails({
-        customerName: editedData[0].data.customerName,
-        refNumber: editedData[0].data.refNumber,
+      // Also update the session's customer/ref info from the first uploaded item
+      if(editedData.length > 0) {
+        setSessionDetails({
+          customerName: editedData[0].data.customerName,
+          refNumber: editedData[0].data.refNumber,
+        });
+      }
+      setIsSaving(false);
+      setExtractedData([]); // Clear extracted data
+      setMainTab("new"); // Go back to new
+       toast({
+        title: "Readings Saved",
+        description: `${newReadings.length} new readings have been added to the current session.`,
       });
-    }
-
-    setIsDialogOpen(false);
+    }, 500);
   };
+  
+  const handleReviewCancel = () => {
+    setExtractedData([]);
+    setMainTab('new');
+  }
 
   const handleManualAdd = (data: Omit<TimegrapherReading, "id" | "timestamp">) => {
     const newReading: TimegrapherReading = {
@@ -170,12 +222,13 @@ export default function Home() {
         <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="new">New</TabsTrigger>
+            {extractedData.length > 0 && <TabsTrigger value="review"><FileCheck /> Review</TabsTrigger>}
             <TabsTrigger value="sessions">Sessions</TabsTrigger>
             <TabsTrigger value="faq">FAQ</TabsTrigger>
           </TabsList>
           <Card className="rounded-t-none">
             <TabsContent value="new" className="space-y-4">
-               <div className="print-hidden p-6">
+               <div className="p-6">
                 <Card>
                     <CardHeader>
                       <CardTitle className="font-headline">Analyze Timegrapher Data</CardTitle>
@@ -211,6 +264,116 @@ export default function Home() {
                     refNumber={refNumberToDisplay}
                   />
                 </div>
+            </TabsContent>
+
+             <TabsContent value="review">
+               <CardHeader>
+                <CardTitle>Review Extracted Data</CardTitle>
+                <CardDescription>
+                  Check the AI-extracted data below and make any necessary corrections before saving.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                 <div className="space-y-6">
+                    {editableData.map((item, index) => (
+                      <div key={index} className="p-4 border rounded-lg space-y-4">
+                        <div className="flex gap-4">
+                          <div className="w-1/4 flex-shrink-0">
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <div 
+                                  className="aspect-square relative rounded-md overflow-hidden border bg-black cursor-zoom-in"
+                                >
+                                  <Image src={item.imageUrl} alt={`Preview ${index + 1}`} layout="fill" objectFit="contain" />
+                                </div>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0">
+                                <Image src={item.imageUrl} alt="Zoomed image" width={400} height={400} className="rounded-md" />
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                          <div className="flex-grow space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <Label htmlFor={`customerName-${index}`}>Customer Name</Label>
+                                    <Input
+                                    id={`customerName-${index}`}
+                                    value={item.data.customerName}
+                                    onChange={(e) => handleInputChange(index, 'customerName', e.target.value)}
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor={`refNumber-${index}`}>Ref. Number</Label>
+                                    <Input
+                                    id={`refNumber-${index}`}
+                                    value={item.data.refNumber}
+                                    onChange={(e) => handleInputChange(index, 'refNumber', e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                              <Label htmlFor={`position-${index}`}>Position</Label>
+                              <Select
+                                value={item.data.position}
+                                onValueChange={(value: Position) => handlePositionChange(index, value)}
+                              >
+                                <SelectTrigger id={`position-${index}`}>
+                                  <SelectValue placeholder="Select position" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {POSITIONS.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div>
+                            <Label htmlFor={`rate-${index}`}>Rate (s/d)</Label>
+                            <Input
+                              id={`rate-${index}`}
+                              value={item.data.rate}
+                              onChange={(e) => handleInputChange(index, 'rate', e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`amplitude-${index}`}>Amplitude (°)</Label>
+                            <Input
+                              id={`amplitude-${index}`}
+                              value={item.data.amplitude}
+                              onChange={(e) => handleInputChange(index, 'amplitude', e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`beatError-${index}`}>Beat Error (ms)</Label>
+                            <Input
+                              id={`beatError-${index}`}
+                              value={item.data.beatError}
+                              onChange={(e) => handleInputChange(index, 'beatError', e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`liftAngle-${index}`}>Lift Angle (°)</Label>
+                            <Input
+                              id={`liftAngle-${index}`}
+                              value={item.data.liftAngle || "52"}
+                              onChange={(e) => handleInputChange(index, 'liftAngle', e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button variant="outline" onClick={handleReviewCancel} disabled={isSaving}>
+                      <X className="mr-2" /> Cancel
+                    </Button>
+                    <Button onClick={() => handleReviewSave(editableData)} disabled={isSaving}>
+                      {isSaving ? <LoaderCircle className="animate-spin mr-2" /> : <Save className="mr-2" />}
+                      Save Readings
+                    </Button>
+                  </div>
+              </CardContent>
             </TabsContent>
 
             <TabsContent value="sessions">
@@ -269,12 +432,6 @@ export default function Home() {
           </Card>
         </Tabs>
 
-        <ExtractedDataDialog
-          isOpen={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
-          extractedData={extractedData}
-          onSave={handleDialogSave}
-        />
       </main>
     </div>
   );
