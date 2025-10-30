@@ -88,13 +88,14 @@ body {
 }
 
 @media print {
+  body {
+    background-color: #fff;
+    color: #000;
+  }
   .print-only {
     display: block !important;
   }
   .no-print {
     display: none !important;
-  }
-  body {
-    background-color: #fff;
   }
 }
