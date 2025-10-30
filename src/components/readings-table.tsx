@@ -172,7 +172,7 @@ export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
             ) : (
               <TableRow>
                 <TableCell colSpan={8} className="h-24 text-center">
-                  {readings.length === 0 ? "No readings yet." : ""}
+                  No readings yet.
                 </TableCell>
               </TableRow>
             )}
@@ -186,22 +186,20 @@ export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
           </div>
         )}
       </CardContent>
-       {readings.length > 0 && (
-        <CardFooter className="justify-end gap-2 no-print">
-          <Button variant="destructive" onClick={handleClearAll}>
-            <Trash2 className="mr-2 h-4 w-4" />
-            Clear All
-          </Button>
-          <Button variant="outline" onClick={handleShare}>
-            <Share2 className="mr-2 h-4 w-4" />
-            Share
-          </Button>
-          <Button onClick={handlePrint}>
-            <Printer className="mr-2 h-4 w-4" />
-            Print
-          </Button>
-        </CardFooter>
-      )}
+      <CardFooter className="justify-end gap-2 no-print">
+        <Button variant="destructive" onClick={handleClearAll} disabled={readings.length === 0}>
+          <Trash2 className="mr-2 h-4 w-4" />
+          Clear All
+        </Button>
+        <Button variant="outline" onClick={handleShare} disabled={readings.length === 0}>
+          <Share2 className="mr-2 h-4 w-4" />
+          Share
+        </Button>
+        <Button onClick={handlePrint} disabled={readings.length === 0}>
+          <Printer className="mr-2 h-4 w-4" />
+          Print
+        </Button>
+      </CardFooter>
     </Card>
   );
 }
