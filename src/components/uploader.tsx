@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { analyzeImage } from "@/app/actions";
 import { UploadCloud, X, LoaderCircle, CheckCircle, Camera } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type UploaderProps = {
   onDataExtracted: (data: any) => void;
@@ -20,7 +21,33 @@ export function Uploader({ onDataExtracted, isProcessing, setProcessing }: Uploa
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | undefined>(undefined);
+  
   const { toast } = useToast();
+
+  useEffect(() => {
+    const getCameraPermission = async () => {
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          console.log("Camera API not available in this browser.");
+          setHasCameraPermission(false);
+          return;
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        setHasCameraPermission(true);
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        console.error("Error accessing camera:", error);
+        setHasCameraPermission(false);
+      }
+    };
+
+    getCameraPermission();
+  }, []);
+
 
   const handleFileChange = (selectedFile: File | null) => {
     if (selectedFile) {
@@ -147,11 +174,20 @@ export function Uploader({ onDataExtracted, isProcessing, setProcessing }: Uploa
             onChange={onFileInputChange}
             disabled={isProcessing}
           />
+           <video ref={videoRef} className="w-full aspect-video rounded-md hidden" autoPlay muted />
+            { hasCameraPermission === false && (
+                <Alert variant="destructive" className="mt-4">
+                    <AlertTitle>Camera Access Required</AlertTitle>
+                    <AlertDescription>
+                        Please allow camera access to use this feature.
+                    </AlertDescription>
+                </Alert>
+            )}
         </div>
       )}
       <div className="flex gap-2 w-full max-w-md">
          {!preview && (
-          <Button variant="outline" className="w-1/3" onClick={() => cameraInputRef.current?.click()} disabled={isProcessing}>
+          <Button variant="outline" className="w-1/3" onClick={() => cameraInputRef.current?.click()} disabled={isProcessing || hasCameraPermission === false}>
             <Camera className="mr-2 h-4 w-4" />
             Camera
           </Button>
