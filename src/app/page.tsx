@@ -18,6 +18,8 @@ export default function Home() {
     const newReading: TimegrapherReading = {
       id: new Date().toISOString(), // simple unique id
       timestamp: new Date(),
+      customerName: data.customerName || 'N/A',
+      refNumber: data.refNumber || 'N/A',
       ...data,
     };
     setReadings((prev) => [newReading, ...prev]);

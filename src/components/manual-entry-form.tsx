@@ -18,6 +18,8 @@ import type { TimegrapherReading } from "@/types";
 import { PlusCircle } from "lucide-react";
 
 const formSchema = z.object({
+  customerName: z.string().min(1, "Customer name is required."),
+  refNumber: z.string().min(1, "Reference number is required."),
   rate: z.string().min(1, "Rate is required."),
   amplitude: z.string().min(1, "Amplitude is required."),
   beatError: z.string().min(1, "Beat error is required."),
@@ -32,6 +34,8 @@ export function ManualEntryForm({ onDataAdded }: ManualEntryFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      customerName: "",
+      refNumber: "A",
       rate: "",
       amplitude: "",
       beatError: "",
@@ -50,7 +54,35 @@ export function ManualEntryForm({ onDataAdded }: ManualEntryFormProps) {
   return (
     <div className="flex justify-center">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="w-full max-w-md space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="w-full max-w-lg space-y-6">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <FormField
+              control={form.control}
+              name="customerName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Customer Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="John Doe" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="refNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Ref. Number</FormLabel>
+                  <FormControl>
+                    <Input placeholder="A123" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <FormField
               control={form.control}
