@@ -4,7 +4,7 @@ import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { analyzeImage } from "@/app/actions";
-import { UploadCloud, X, LoaderCircle, CheckCircle } from "lucide-react";
+import { UploadCloud, X, LoaderCircle, CheckCircle, Camera } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +19,7 @@ export function Uploader({ onDataExtracted, isProcessing, setProcessing }: Uploa
   const [preview, setPreview] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const handleFileChange = (selectedFile: File | null) => {
@@ -49,6 +50,9 @@ export function Uploader({ onDataExtracted, isProcessing, setProcessing }: Uploa
     setPreview(null);
     if(fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+    if (cameraInputRef.current) {
+      cameraInputRef.current.value = "";
     }
   };
 
@@ -108,22 +112,24 @@ export function Uploader({ onDataExtracted, isProcessing, setProcessing }: Uploa
           </Button>
         </div>
       ) : (
-        <div
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className={cn(
-            "w-full max-w-md flex flex-col items-center justify-center p-10 border-2 border-dashed rounded-lg cursor-pointer transition-colors",
-            isDragging ? "border-primary bg-accent/20" : "border-border hover:border-primary/50"
-          )}
-        >
-          <UploadCloud className="h-12 w-12 text-muted-foreground" />
-          <p className="mt-4 text-sm text-muted-foreground">
-            <span className="font-semibold text-accent">Click to upload</span> or drag and drop
-          </p>
-          <p className="text-xs text-muted-foreground/80">PNG, JPG, or WEBP (max. 4MB)</p>
+        <div className="w-full max-w-md">
+          <div
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className={cn(
+              "w-full flex flex-col items-center justify-center p-10 border-2 border-dashed rounded-lg cursor-pointer transition-colors",
+              isDragging ? "border-primary bg-accent/20" : "border-border hover:border-primary/50"
+            )}
+          >
+            <UploadCloud className="h-12 w-12 text-muted-foreground" />
+            <p className="mt-4 text-sm text-muted-foreground">
+              <span className="font-semibold text-accent">Click to upload</span> or drag and drop
+            </p>
+            <p className="text-xs text-muted-foreground/80">PNG, JPG, or WEBP (max. 4MB)</p>
+          </div>
           <input
             ref={fileInputRef}
             type="file"
@@ -132,14 +138,31 @@ export function Uploader({ onDataExtracted, isProcessing, setProcessing }: Uploa
             onChange={onFileInputChange}
             disabled={isProcessing}
           />
+           <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={onFileInputChange}
+            disabled={isProcessing}
+          />
         </div>
       )}
-      <Button onClick={handleAnalyze} disabled={!file || isProcessing} className="w-full max-w-md" size="lg">
-        {isProcessing ? (
-          <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-        ) : null}
-        {isProcessing ? "Analyzing..." : "Analyze Image"}
-      </Button>
+      <div className="flex gap-2 w-full max-w-md">
+         {!preview && (
+          <Button variant="outline" className="w-1/3" onClick={() => cameraInputRef.current?.click()} disabled={isProcessing}>
+            <Camera className="mr-2 h-4 w-4" />
+            Camera
+          </Button>
+        )}
+        <Button onClick={handleAnalyze} disabled={!file || isProcessing} className="w-full" size="lg">
+          {isProcessing ? (
+            <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+          ) : null}
+          {isProcessing ? "Analyzing..." : "Analyze Image"}
+        </Button>
+      </div>
     </div>
   );
 }
