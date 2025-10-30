@@ -34,6 +34,7 @@ type ExtractedDataDialogProps = {
 export function ExtractedDataDialog({ isOpen, onOpenChange, extractedData, onSave }: ExtractedDataDialogProps) {
   const [editableData, setEditableData] = useState<AnalyzedImage[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [zoomedImageUrl, setZoomedImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -76,105 +77,118 @@ export function ExtractedDataDialog({ isOpen, onOpenChange, extractedData, onSav
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Review Extracted Data</DialogTitle>
-          <DialogDescription>
-            Check the AI-extracted data below and make any necessary corrections before saving.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex-grow overflow-y-auto pr-4">
-          <div className="space-y-6">
-            {editableData.map((item, index) => (
-              <div key={index} className="p-4 border rounded-lg space-y-4">
-                <div className="flex gap-4">
-                  <div className="w-1/4 flex-shrink-0">
-                    <div className="aspect-square relative rounded-md overflow-hidden border">
-                      <Image src={item.imageUrl} alt={`Preview ${index + 1}`} layout="fill" objectFit="cover" />
+    <>
+      <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Review Extracted Data</DialogTitle>
+            <DialogDescription>
+              Check the AI-extracted data below and make any necessary corrections before saving.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-grow overflow-y-auto pr-4">
+            <div className="space-y-6">
+              {editableData.map((item, index) => (
+                <div key={index} className="p-4 border rounded-lg space-y-4">
+                  <div className="flex gap-4">
+                    <div className="w-1/4 flex-shrink-0">
+                      <div 
+                        className="aspect-square relative rounded-md overflow-hidden border bg-black cursor-zoom-in"
+                        onClick={() => setZoomedImageUrl(item.imageUrl)}
+                      >
+                        <Image src={item.imageUrl} alt={`Preview ${index + 1}`} layout="fill" objectFit="contain" />
+                      </div>
+                    </div>
+                    <div className="flex-grow space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                              <Label htmlFor={`customerName-${index}`}>Customer Name</Label>
+                              <Input
+                              id={`customerName-${index}`}
+                              value={item.data.customerName}
+                              onChange={(e) => handleInputChange(index, 'customerName', e.target.value)}
+                              />
+                          </div>
+                          <div>
+                              <Label htmlFor={`refNumber-${index}`}>Ref. Number</Label>
+                              <Input
+                              id={`refNumber-${index}`}
+                              value={item.data.refNumber}
+                              onChange={(e) => handleInputChange(index, 'refNumber', e.target.value)}
+                              />
+                          </div>
+                      </div>
+                      <div>
+                        <Label htmlFor={`position-${index}`}>Position</Label>
+                        <Select
+                          value={item.data.position}
+                          onValueChange={(value: Position) => handlePositionChange(index, value)}
+                        >
+                          <SelectTrigger id={`position-${index}`}>
+                            <SelectValue placeholder="Select position" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {POSITIONS.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex-grow space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <Label htmlFor={`customerName-${index}`}>Customer Name</Label>
-                            <Input
-                            id={`customerName-${index}`}
-                            value={item.data.customerName}
-                            onChange={(e) => handleInputChange(index, 'customerName', e.target.value)}
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor={`refNumber-${index}`}>Ref. Number</Label>
-                            <Input
-                            id={`refNumber-${index}`}
-                            value={item.data.refNumber}
-                            onChange={(e) => handleInputChange(index, 'refNumber', e.target.value)}
-                            />
-                        </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <Label htmlFor={`rate-${index}`}>Rate (s/d)</Label>
+                      <Input
+                        id={`rate-${index}`}
+                        value={item.data.rate}
+                        onChange={(e) => handleInputChange(index, 'rate', e.target.value)}
+                      />
                     </div>
                     <div>
-                      <Label htmlFor={`position-${index}`}>Position</Label>
-                      <Select
-                        value={item.data.position}
-                        onValueChange={(value: Position) => handlePositionChange(index, value)}
-                      >
-                        <SelectTrigger id={`position-${index}`}>
-                          <SelectValue placeholder="Select position" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {POSITIONS.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor={`amplitude-${index}`}>Amplitude (°)</Label>
+                      <Input
+                        id={`amplitude-${index}`}
+                        value={item.data.amplitude}
+                        onChange={(e) => handleInputChange(index, 'amplitude', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`beatError-${index}`}>Beat Error (ms)</Label>
+                      <Input
+                        id={`beatError-${index}`}
+                        value={item.data.beatError}
+                        onChange={(e) => handleInputChange(index, 'beatError', e.target.value)}
+                      />
+                    </div>
+                     <div>
+                      <Label htmlFor={`liftAngle-${index}`}>Lift Angle (°)</Label>
+                      <Input
+                        id={`liftAngle-${index}`}
+                        value={item.data.liftAngle || "52"}
+                         onChange={(e) => handleInputChange(index, 'liftAngle', e.target.value)}
+                      />
                     </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
-                    <Label htmlFor={`rate-${index}`}>Rate (s/d)</Label>
-                    <Input
-                      id={`rate-${index}`}
-                      value={item.data.rate}
-                      onChange={(e) => handleInputChange(index, 'rate', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor={`amplitude-${index}`}>Amplitude (°)</Label>
-                    <Input
-                      id={`amplitude-${index}`}
-                      value={item.data.amplitude}
-                      onChange={(e) => handleInputChange(index, 'amplitude', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor={`beatError-${index}`}>Beat Error (ms)</Label>
-                    <Input
-                      id={`beatError-${index}`}
-                      value={item.data.beatError}
-                      onChange={(e) => handleInputChange(index, 'beatError', e.target.value)}
-                    />
-                  </div>
-                   <div>
-                    <Label htmlFor={`liftAngle-${index}`}>Lift Angle (°)</Label>
-                    <Input
-                      id={`liftAngle-${index}`}
-                      value={item.data.liftAngle || "52"}
-                       onChange={(e) => handleInputChange(index, 'liftAngle', e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>Cancel</Button>
-          <Button onClick={handleSaveClick} disabled={isSaving}>
-            {isSaving ? <LoaderCircle className="animate-spin mr-2" /> : <Save className="mr-2" />}
-            Save Readings
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>Cancel</Button>
+            <Button onClick={handleSaveClick} disabled={isSaving}>
+              {isSaving ? <LoaderCircle className="animate-spin mr-2" /> : <Save className="mr-2" />}
+              Save Readings
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {zoomedImageUrl && (
+        <Dialog open={!!zoomedImageUrl} onOpenChange={() => setZoomedImageUrl(null)}>
+          <DialogContent className="max-w-[90vw] max-h-[90vh] w-auto h-auto flex items-center justify-center p-2">
+              <Image src={zoomedImageUrl} alt="Zoomed image" width={1000} height={1000} className="max-w-full max-h-[85vh] object-contain" />
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   );
 }
