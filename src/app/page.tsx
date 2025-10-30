@@ -173,46 +173,47 @@ export default function Home() {
             <TabsTrigger value="sessions">Sessions</TabsTrigger>
             <TabsTrigger value="faq">FAQ</TabsTrigger>
           </TabsList>
+          <Card className="rounded-t-none">
+            <TabsContent value="new" className="space-y-4">
+               <div className="print-hidden p-6">
+                <Card>
+                    <CardHeader>
+                      <CardTitle className="font-headline">Analyze Timegrapher Data</CardTitle>
+                      <CardDescription>
+                        Upload photos or enter data manually for the current session.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Tabs defaultValue="upload" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2 mb-6">
+                          <TabsTrigger value="upload"><UploadCloud className="mr-2" /> Upload Photos</TabsTrigger>
+                          <TabsTrigger value="manual"><PenSquare className="mr-2" /> Manual Entry</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="upload">
+                          <Uploader 
+                            onDataExtracted={handleDataExtracted} 
+                            isProcessing={isProcessing}
+                            setProcessing={setIsProcessing} 
+                          />
+                        </TabsContent>
+                        <TabsContent value="manual">
+                          <ManualEntryForm onDataAdded={handleManualAdd} />
+                        </TabsContent>
+                      </Tabs>
+                    </CardContent>
+                  </Card>
+                </div>
+                <div className="px-6 pb-6">
+                  <ReadingsTable 
+                    readings={readingsToDisplay} 
+                    setReadings={setActiveReadings} 
+                    customerName={customerNameToDisplay}
+                    refNumber={refNumberToDisplay}
+                  />
+                </div>
+            </TabsContent>
 
-          <TabsContent value="new" className="space-y-4">
-             <div className="print-hidden">
-              <Card>
-                  <CardHeader>
-                    <CardTitle className="font-headline">Analyze Timegrapher Data</CardTitle>
-                    <CardDescription>
-                      Upload photos or enter data manually for the current session.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Tabs defaultValue="upload" className="w-full">
-                      <TabsList className="grid w-full grid-cols-2 mb-6">
-                        <TabsTrigger value="upload"><UploadCloud className="mr-2" /> Upload Photos</TabsTrigger>
-                        <TabsTrigger value="manual"><PenSquare className="mr-2" /> Manual Entry</TabsTrigger>
-                      </TabsList>
-                      <TabsContent value="upload">
-                        <Uploader 
-                          onDataExtracted={handleDataExtracted} 
-                          isProcessing={isProcessing}
-                          setProcessing={setIsProcessing} 
-                        />
-                      </TabsContent>
-                      <TabsContent value="manual">
-                        <ManualEntryForm onDataAdded={handleManualAdd} />
-                      </TabsContent>
-                    </Tabs>
-                  </CardContent>
-                </Card>
-              </div>
-              <ReadingsTable 
-                readings={readingsToDisplay} 
-                setReadings={setActiveReadings} 
-                customerName={customerNameToDisplay}
-                refNumber={refNumberToDisplay}
-              />
-          </TabsContent>
-
-          <TabsContent value="sessions">
-            <Card>
+            <TabsContent value="sessions">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle>All Sessions</CardTitle>
@@ -258,16 +259,14 @@ export default function Home() {
                   </div>
                 ))}
               </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="faq">
-            <Card>
-              <CardContent className="p-6">
-                <Faq />
-              </CardContent>
-            </Card>
-          </TabsContent>
+            </TabsContent>
+            
+            <TabsContent value="faq">
+                <CardContent className="p-6">
+                  <Faq />
+                </CardContent>
+            </TabsContent>
+          </Card>
         </Tabs>
 
         <ExtractedDataDialog
