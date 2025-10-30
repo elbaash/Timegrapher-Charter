@@ -14,8 +14,77 @@ import { Faq } from "@/components/faq";
 import { ExtractedDataDialog } from "@/components/extracted-data-dialog";
 import { AnalyzedImage } from "@/types";
 
+const initialReadings: TimegrapherReading[] = [
+    {
+        id: new Date().toISOString() + '-1',
+        timestamp: new Date(new Date().getTime() - 5 * 60000),
+        customerName: 'Jane Smith',
+        refNumber: 'A246',
+        position: 'Dial Up',
+        rate: '+4',
+        amplitude: '285',
+        beatError: '0.1',
+        liftAngle: '52',
+    },
+    {
+        id: new Date().toISOString() + '-2',
+        timestamp: new Date(new Date().getTime() - 4 * 60000),
+        customerName: 'Jane Smith',
+        refNumber: 'A246',
+        position: 'Dial Down',
+        rate: '+6',
+        amplitude: '281',
+        beatError: '0.2',
+        liftAngle: '52',
+    },
+    {
+        id: new Date().toISOString() + '-3',
+        timestamp: new Date(new Date().getTime() - 3 * 60000),
+        customerName: 'Jane Smith',
+        refNumber: 'A246',
+        position: 'Crown Down',
+        rate: '-2',
+        amplitude: '260',
+        beatError: '0.4',
+        liftAngle: '52',
+    },
+    {
+        id: new Date().toISOString() + '-4',
+        timestamp: new Date(new Date().getTime() - 2 * 60000),
+        customerName: 'Jane Smith',
+        refNumber: 'A246',
+        position: 'Crown Up',
+        rate: '0',
+        amplitude: '255',
+        beatError: '0.5',
+        liftAngle: '52',
+    },
+    {
+        id: new Date().toISOString() + '-5',
+        timestamp: new Date(new Date().getTime() - 1 * 60000),
+        customerName: 'Jane Smith',
+        refNumber: 'A246',
+        position: 'Crown Left',
+        rate: '-5',
+        amplitude: '251',
+        beatError: '0.3',
+        liftAngle: '52',
+    },
+    {
+        id: new Date().toISOString() + '-6',
+        timestamp: new Date(),
+        customerName: 'Jane Smith',
+        refNumber: 'A246',
+        position: 'Crown Right',
+        rate: '-3',
+        amplitude: '258',
+        beatError: '0.4',
+        liftAngle: '52',
+    },
+];
+
 export default function Home() {
-  const [readings, setReadings] = useState<TimegrapherReading[]>([]);
+  const [readings, setReadings] = useState<TimegrapherReading[]>(initialReadings);
   const [isProcessing, setIsProcessing] = useState(false);
   const [extractedData, setExtractedData] = useState<AnalyzedImage[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
