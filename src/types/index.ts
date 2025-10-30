@@ -11,22 +11,38 @@ export const POSITIONS = [
 
 export type Position = typeof POSITIONS[number];
 
-export type TimegrapherReadingData = {
-  customerName: string;
-  refNumber: string;
+// Raw data from timegrapher, without session-specific info
+export type TimegrapherData = {
   position: Position;
   rate: string;
   amplitude: string;
   beatError: string;
   liftAngle: string;
-};
+}
+
+// Data used for manual entry forms, includes customer info
+export type TimegrapherReadingData = {
+  customerName: string;
+  refNumber: string;
+} & TimegrapherData;
+
 
 export type TimegrapherReading = {
   id: string;
   timestamp: Date | string;
-} & TimegrapherReadingData;
+} & TimegrapherData;
 
 export type AnalyzedImage = {
   imageUrl: string;
-  data: TimegrapherReadingData;
+  data: TimegrapherReadingData; // This includes customer/ref for initial assignment
 };
+
+export type CustomerSession = {
+  id: string;
+  customerName: string;
+  refNumber: string;
+  createdAt: string | Date;
+  readings: TimegrapherReading[];
+}
+
+    

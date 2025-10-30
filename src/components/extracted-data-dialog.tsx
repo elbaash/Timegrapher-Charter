@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TimegrapherReading, POSITIONS, Position, AnalyzedImage } from "@/types";
+import { TimegrapherReadingData, POSITIONS, Position, AnalyzedImage } from "@/types";
 import { Save, LoaderCircle } from "lucide-react";
 import Image from "next/image";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -42,7 +42,7 @@ export function ExtractedDataDialog({ isOpen, onOpenChange, extractedData, onSav
     }
   }, [isOpen, extractedData]);
 
-  const handleInputChange = (index: number, field: keyof Omit<TimegrapherReading, "id" | "timestamp" | "position">, value: string) => {
+  const handleInputChange = (index: number, field: keyof TimegrapherReadingData, value: string) => {
     const newData = [...editableData];
     newData[index] = { 
         ...newData[index],
@@ -190,3 +190,5 @@ export function ExtractedDataDialog({ isOpen, onOpenChange, extractedData, onSav
     </>
   );
 }
+
+    

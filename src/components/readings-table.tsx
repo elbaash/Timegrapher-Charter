@@ -19,34 +19,43 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import type { TimegrapherReading } from "@/types";
-import { Clock, Gauge, Activity, HeartPulse, Share2, Printer, ListX, User, Hash, Zap, Trash2, MapPin } from "lucide-react";
+import type { TimegrapherReading, CustomerSession } from "@/types";
+import { Clock, Gauge, Activity, HeartPulse, Share2, Printer, ListX, User, Hash, Zap, Trash2, MapPin, Save } from "lucide-react";
 import { format } from "date-fns";
 
 type ReadingsTableProps = {
   readings: TimegrapherReading[];
   setReadings: React.Dispatch<React.SetStateAction<TimegrapherReading[]>>;
+  customerName: string;
+  refNumber: string;
 };
 
-export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
+export function ReadingsTable({ readings, setReadings, customerName, refNumber }: ReadingsTableProps) {
   const { toast } = useToast();
 
   const handleClearAll = () => {
     setReadings([]);
     toast({
       title: "Readings Cleared",
-      description: "All entries have been removed from the table.",
+      description: "All entries have been removed from the current session.",
+    });
+  };
+
+  const handleSave = () => {
+    // In the new architecture, data is saved automatically.
+    // This button can provide user feedback.
+    toast({
+      title: "Session Saved",
+      description: `Readings for ${customerName} (${refNumber}) are saved.`,
     });
   };
 
   const formatReadingsAsText = () => {
     if (readings.length === 0) return "No readings to share.";
 
-    let text = "ChronoGrapher Readings:\n\n";
+    let text = `ChronoGrapher Readings for ${customerName} (${refNumber}):\n\n`;
     readings.forEach((reading, index) => {
-      text += `${index + 1}. ${format(new Date(reading.timestamp), 'Pp')}\n`;
-      text += `   - Customer: ${reading.customerName}\n`;
-      text += `   - Ref #: ${reading.refNumber}\n`;
+      text += `${format(new Date(reading.timestamp), 'Pp')}\n`;
       text += `   - Position: ${reading.position}\n`;
       text += `   - Rate: ${reading.rate} s/d\n`;
       text += `   - Amplitude: ${reading.amplitude}°\n`;
@@ -66,7 +75,6 @@ export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
         });
       } catch (error: any) {
         if (error.name !== 'AbortError') {
-          console.error("Error sharing:", error);
           toast({
             variant: "destructive",
             title: "Sharing failed",
@@ -95,41 +103,38 @@ export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
   const handlePrint = () => {
     window.print();
   };
+  
+  const printHeader = (
+    <div className="print-only hidden">
+        <div className="pt-8">
+            <h1 className="text-2xl font-bold text-center mb-2 font-headline">ChronoGrapher Readings</h1>
+            <div className="text-center text-sm text-muted-foreground mb-6">
+              <p>{format(new Date(), 'PP')}</p>
+              <p>Customer: <span className="font-semibold">{customerName}</span> | Ref #: <span className="font-semibold">{refNumber}</span></p>
+            </div>
+        </div>
+    </div>
+  );
 
   return (
     <>
-      <div className="print-only hidden">
-          <div className="pt-8">
-              <h1 className="text-2xl font-bold text-center mb-2 font-headline">ChronoGrapher Readings</h1>
-              <p className="text-center text-sm text-muted-foreground mb-6">{format(new Date(), 'PP')}</p>
-          </div>
-      </div>
-      <Card className="no-print">
+      {printHeader}
+      <Card className="flex flex-col flex-grow">
         <div className="no-print">
           <CardHeader>
-            <CardTitle className="font-headline">Recorded Readings</CardTitle>
+            <CardTitle className="font-headline">Current Session</CardTitle>
             <CardDescription>
-              This table contains all the timegrapher data you've analyzed in this session.
+              Readings for <span className="font-bold">{customerName} ({refNumber})</span>. Add or upload data to this session.
             </CardDescription>
           </CardHeader>
         </div>
-        <CardContent className="p-0">
+        <CardContent className="p-0 flex-grow">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[180px]">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4" /> Timestamp
-                  </div>
-                </TableHead>
-                <TableHead>
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4" /> Customer
-                  </div>
-                </TableHead>
-                 <TableHead>
-                  <div className="flex items-center gap-2">
-                    <Hash className="h-4 w-4" /> Ref #
                   </div>
                 </TableHead>
                 <TableHead>
@@ -164,8 +169,6 @@ export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
                 readings.map((reading) => (
                   <TableRow key={reading.id}>
                     <TableCell>{format(new Date(reading.timestamp), "Pp")}</TableCell>
-                    <TableCell>{reading.customerName}</TableCell>
-                    <TableCell>{reading.refNumber}</TableCell>
                     <TableCell>{reading.position}</TableCell>
                     <TableCell className="font-medium">{reading.rate}</TableCell>
                     <TableCell>{reading.amplitude}</TableCell>
@@ -175,7 +178,7 @@ export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     No readings yet.
                   </TableCell>
                 </TableRow>
@@ -183,17 +186,21 @@ export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
             </TableBody>
           </Table>
            {readings.length === 0 && (
-            <div className="flex flex-col items-center justify-center gap-4 py-16">
+            <div className="flex flex-col items-center justify-center gap-4 py-16 h-full">
               <ListX className="h-16 w-16 text-muted-foreground/50" />
               <h3 className="text-xl font-semibold tracking-tight font-headline">No Readings Yet</h3>
               <p className="text-muted-foreground">Upload an image or enter data manually to start.</p>
             </div>
           )}
         </CardContent>
-        <CardFooter className="justify-end gap-2 no-print">
+        <CardFooter className="justify-end gap-2 no-print mt-auto">
           <Button variant="destructive" onClick={handleClearAll} disabled={readings.length === 0}>
             <Trash2 className="mr-2 h-4 w-4" />
-            Clear All
+            Clear Session
+          </Button>
+           <Button variant="secondary" onClick={handleSave} disabled={readings.length === 0}>
+            <Save className="mr-2 h-4 w-4" />
+            Save Session
           </Button>
           <Button variant="outline" onClick={handleShare} disabled={readings.length === 0}>
             <Share2 className="mr-2 h-4 w-4" />
@@ -210,8 +217,6 @@ export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[180px]">Timestamp</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Ref #</TableHead>
                 <TableHead>Position</TableHead>
                 <TableHead>Rate (s/d)</TableHead>
                 <TableHead>Amplitude (°)</TableHead>
@@ -223,8 +228,6 @@ export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
               {readings.map((reading) => (
                 <TableRow key={reading.id}>
                   <TableCell>{format(new Date(reading.timestamp), "Pp")}</TableCell>
-                  <TableCell>{reading.customerName}</TableCell>
-                  <TableCell>{reading.refNumber}</TableCell>
                   <TableCell>{reading.position}</TableCell>
                   <TableCell className="font-medium">{reading.rate}</TableCell>
                   <TableCell>{reading.amplitude}</TableCell>
@@ -238,3 +241,5 @@ export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
     </>
   );
 }
+
+    

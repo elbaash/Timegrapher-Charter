@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -21,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { TimegrapherReading, POSITIONS } from "@/types";
+import { TimegrapherReadingData, POSITIONS } from "@/types";
 import { PlusCircle } from "lucide-react";
 
 const formSchema = z.object({
@@ -35,7 +36,7 @@ const formSchema = z.object({
 });
 
 type ManualEntryFormProps = {
-  onDataAdded: (data: Omit<TimegrapherReading, "id" | "timestamp">) => void;
+  onDataAdded: (data: TimegrapherReadingData) => void;
 };
 
 export function ManualEntryForm({ onDataAdded }: ManualEntryFormProps) {
@@ -61,9 +62,11 @@ export function ManualEntryForm({ onDataAdded }: ManualEntryFormProps) {
     });
     form.reset({
       ...form.getValues(),
+      position: "Dial Up",
       rate: "",
       amplitude: "",
       beatError: "",
+      liftAngle: "52"
     });
   }
 
@@ -182,3 +185,5 @@ export function ManualEntryForm({ onDataAdded }: ManualEntryFormProps) {
     </div>
   );
 }
+
+    
