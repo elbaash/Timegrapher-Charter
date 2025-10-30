@@ -238,9 +238,13 @@ export default function Home() {
                     </CardHeader>
                     <CardContent>
                       <Tabs defaultValue="upload" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 mb-6">
-                          <TabsTrigger value="upload"><UploadCloud className="mr-2" /> Upload Photos</TabsTrigger>
-                          <TabsTrigger value="manual"><PenSquare className="mr-2" /> Manual Entry</TabsTrigger>
+                        <TabsList className="mb-6 grid w-full grid-cols-2 rounded-lg bg-muted p-1">
+                            <TabsTrigger value="upload" className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow">
+                                <UploadCloud className="mr-2" /> Upload Photos
+                            </TabsTrigger>
+                            <TabsTrigger value="manual" className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow">
+                                <PenSquare className="mr-2" /> Manual Entry
+                            </TabsTrigger>
                         </TabsList>
                         <TabsContent value="upload">
                           <Uploader 
@@ -436,3 +440,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
