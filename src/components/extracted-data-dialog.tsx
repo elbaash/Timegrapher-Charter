@@ -23,6 +23,7 @@ import {
 import { TimegrapherReading, POSITIONS, Position, AnalyzedImage } from "@/types";
 import { Save, LoaderCircle } from "lucide-react";
 import Image from "next/image";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 type ExtractedDataDialogProps = {
   isOpen: boolean;
@@ -34,7 +35,6 @@ type ExtractedDataDialogProps = {
 export function ExtractedDataDialog({ isOpen, onOpenChange, extractedData, onSave }: ExtractedDataDialogProps) {
   const [editableData, setEditableData] = useState<AnalyzedImage[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  const [zoomedImageUrl, setZoomedImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -92,12 +92,18 @@ export function ExtractedDataDialog({ isOpen, onOpenChange, extractedData, onSav
                 <div key={index} className="p-4 border rounded-lg space-y-4">
                   <div className="flex gap-4">
                     <div className="w-1/4 flex-shrink-0">
-                      <div 
-                        className="aspect-square relative rounded-md overflow-hidden border bg-black cursor-zoom-in"
-                        onClick={() => setZoomedImageUrl(item.imageUrl)}
-                      >
-                        <Image src={item.imageUrl} alt={`Preview ${index + 1}`} layout="fill" objectFit="contain" />
-                      </div>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                           <div 
+                            className="aspect-square relative rounded-md overflow-hidden border bg-black cursor-zoom-in"
+                          >
+                            <Image src={item.imageUrl} alt={`Preview ${index + 1}`} layout="fill" objectFit="contain" />
+                          </div>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                           <Image src={item.imageUrl} alt="Zoomed image" width={400} height={400} className="rounded-md" />
+                        </PopoverContent>
+                      </Popover>
                     </div>
                     <div className="flex-grow space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -181,14 +187,6 @@ export function ExtractedDataDialog({ isOpen, onOpenChange, extractedData, onSav
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
-      {zoomedImageUrl && (
-        <Dialog open={!!zoomedImageUrl} onOpenChange={() => setZoomedImageUrl(null)}>
-          <DialogContent className="max-w-[90vw] max-h-[90vh] w-auto h-auto flex items-center justify-center p-2">
-              <Image src={zoomedImageUrl} alt="Zoomed image" width={1000} height={1000} className="max-w-full max-h-[85vh] object-contain" />
-          </DialogContent>
-        </Dialog>
-      )}
     </>
   );
 }
