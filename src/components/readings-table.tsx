@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -63,13 +64,16 @@ export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
           title: "ChronoGrapher Readings",
           text: shareText,
         });
-      } catch (error) {
-        console.error("Error sharing:", error);
-        toast({
-          variant: "destructive",
-          title: "Sharing failed",
-          description: "Could not share the readings.",
-        });
+      } catch (error: any) {
+        // Don't log an error if the user cancels the share dialog (AbortError).
+        if (error.name !== 'AbortError') {
+          console.error("Error sharing:", error);
+          toast({
+            variant: "destructive",
+            title: "Sharing failed",
+            description: "Could not share the readings.",
+          });
+        }
       }
     } else {
       try {
