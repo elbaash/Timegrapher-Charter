@@ -13,7 +13,7 @@ export function Faq() {
             <ol className="list-decimal list-inside space-y-2">
               <li><strong>Power On:</strong> Connect the timegrapher to power and turn it on.</li>
               <li><strong>Mount Watch:</strong> Place the watch securely on the 6-position microphone stand. Make sure the crown is not touching the clamp.</li>
-              <li><strong>Set Parameters:</strong> The timegrapher will often automatically detect the beat number (lift angle). If not, you may need to set it manually. The most common beat numbers are 28800 and 21600. The default lift angle is usually 52°, which is correct for most modern movements.</li>
+              <li><strong>Set Parameters:</strong> The timegrapher will often automatically detect the beat number. If not, you may need to set it manually. The most common beat numbers are 28800 and 21600. The default lift angle is usually 52°, which is correct for most modern movements.</li>
               <li><strong>Start Analysis:</strong> The machine will begin displaying readings automatically.</li>
             </ol>
           </AccordionContent>
@@ -42,6 +42,7 @@ export function Faq() {
                 <li><strong>Rate (s/d):</strong> This is the accuracy of the watch, measured in seconds per day. A positive number means the watch is running fast, while a negative number means it's running slow.</li>
                 <li><strong>Amplitude (°):</strong> This measures the amount of rotation in the swing of the balance wheel. A healthy amplitude for a fully wound watch is typically between 270° and 310°.</li>
                 <li><strong>Beat Error (ms):</strong> This is the measure of how centered the balance wheel's impulse is. A lower beat error is better, with 0.0ms being perfect. Anything under 0.5ms is generally considered very good.</li>
+                <li><strong>Lift Angle (°):</strong> This is a key parameter for calculating amplitude. It's an angle specific to the watch movement. Most common movements (like ETA 2824, Sellita SW200) use <strong>52°</strong>. Some older or different movements can vary (e.g., 48°, 50°, 55°). You must set this correctly on the timegrapher to get an accurate amplitude reading. If you're unsure, 52° is a safe starting point for most modern Swiss or Japanese watches.</li>
             </ul>
           </AccordionContent>
         </AccordionItem>

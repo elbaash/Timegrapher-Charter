@@ -21,6 +21,7 @@ export default function Home() {
       timestamp: new Date(),
       customerName: data.customerName || 'N/A',
       refNumber: data.refNumber || 'N/A',
+      liftAngle: data.liftAngle || '52',
       ...data,
     };
     setReadings((prev) => [newReading, ...prev]);

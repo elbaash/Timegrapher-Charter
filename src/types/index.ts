@@ -6,4 +6,5 @@ export type TimegrapherReading = {
   rate: string;
   amplitude: string;
   beatError: string;
+  liftAngle: string;
 };

@@ -19,7 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import type { TimegrapherReading } from "@/types";
-import { Clock, Gauge, Activity, HeartPulse, Share2, Printer, ListX, User, Hash } from "lucide-react";
+import { Clock, Gauge, Activity, HeartPulse, Share2, Printer, ListX, User, Hash, Zap } from "lucide-react";
 import { format } from "date-fns";
 
 type ReadingsTableProps = {
@@ -39,7 +39,8 @@ export function ReadingsTable({ readings }: ReadingsTableProps) {
       text += `   - Ref #: ${reading.refNumber}\n`;
       text += `   - Rate: ${reading.rate}\n`;
       text += `   - Amplitude: ${reading.amplitude}\n`;
-      text += `   - Beat Error: ${reading.beatError}\n\n`;
+      text += `   - Beat Error: ${reading.beatError}\n`;
+      text += `   - Lift Angle: ${reading.liftAngle}°\n\n`;
     });
     return text;
   };
@@ -130,6 +131,11 @@ export function ReadingsTable({ readings }: ReadingsTableProps) {
                   <HeartPulse className="h-4 w-4" /> Beat Error (ms)
                 </div>
               </TableHead>
+              <TableHead>
+                <div className="flex items-center gap-2">
+                  <Zap className="h-4 w-4" /> Lift Angle (°)
+                </div>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -142,11 +148,12 @@ export function ReadingsTable({ readings }: ReadingsTableProps) {
                   <TableCell className="font-medium">{reading.rate}</TableCell>
                   <TableCell>{reading.amplitude}</TableCell>
                   <TableCell>{reading.beatError}</TableCell>
+                  <TableCell>{reading.liftAngle}</TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow className="no-print">
-                <TableCell colSpan={6} className="h-48 text-center">
+                <TableCell colSpan={7} className="h-48 text-center">
                   <div className="flex flex-col items-center justify-center gap-4">
                     <ListX className="h-16 w-16 text-muted-foreground/50" />
                     <h3 className="text-xl font-semibold tracking-tight font-headline">No Readings Yet</h3>

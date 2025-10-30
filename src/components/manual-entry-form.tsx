@@ -23,6 +23,7 @@ const formSchema = z.object({
   rate: z.string().min(1, "Rate is required."),
   amplitude: z.string().min(1, "Amplitude is required."),
   beatError: z.string().min(1, "Beat error is required."),
+  liftAngle: z.string().min(1, "Lift angle is required."),
 });
 
 type ManualEntryFormProps = {
@@ -39,6 +40,7 @@ export function ManualEntryForm({ onDataAdded }: ManualEntryFormProps) {
       rate: "",
       amplitude: "",
       beatError: "",
+      liftAngle: "52",
     },
   });
 
@@ -83,7 +85,7 @@ export function ManualEntryForm({ onDataAdded }: ManualEntryFormProps) {
               )}
             />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <FormField
               control={form.control}
               name="rate"
@@ -118,6 +120,19 @@ export function ManualEntryForm({ onDataAdded }: ManualEntryFormProps) {
                   <FormLabel>Beat Error (ms)</FormLabel>
                   <FormControl>
                     <Input placeholder="0.2" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="liftAngle"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Lift Angle (°)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="52" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
