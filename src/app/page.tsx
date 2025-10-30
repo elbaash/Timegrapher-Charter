@@ -48,36 +48,38 @@ export default function Home() {
     <div className="flex min-h-screen w-full flex-col bg-background">
       <AppHeader />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 print:p-0">
-        <Tabs defaultValue="upload" className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 no-print">
-          <Card className="lg:col-span-7">
-            <CardHeader>
-              <CardTitle className="font-headline">Analyze Timegrapher Data</CardTitle>
-              <CardDescription>
-                Upload photos, enter data manually, or learn how to use your timegrapher.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <TabsList className="grid w-full grid-cols-3 mb-6">
-                <TabsTrigger value="upload"><UploadCloud className="mr-2" /> Upload Photos</TabsTrigger>
-                <TabsTrigger value="manual"><PenSquare className="mr-2" /> Manual Entry</TabsTrigger>
-                <TabsTrigger value="faq"><HelpCircle className="mr-2" /> FAQ</TabsTrigger>
-              </TabsList>
-              <TabsContent value="upload">
-                <Uploader 
-                  onDataExtracted={handleDataExtracted} 
-                  isProcessing={isProcessing}
-                  setProcessing={setIsProcessing} 
-                />
-              </TabsContent>
-              <TabsContent value="manual">
-                <ManualEntryForm onDataAdded={handleManualAdd} />
-              </TabsContent>
-              <TabsContent value="faq">
-                <Faq />
-              </TabsContent>
-            </CardContent>
-          </Card>
-        </Tabs>
+        <div className="no-print">
+          <Tabs defaultValue="upload" className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <Card className="lg:col-span-7">
+              <CardHeader>
+                <CardTitle className="font-headline">Analyze Timegrapher Data</CardTitle>
+                <CardDescription>
+                  Upload photos, enter data manually, or learn how to use your timegrapher.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TabsList className="grid w-full grid-cols-3 mb-6">
+                  <TabsTrigger value="upload"><UploadCloud className="mr-2" /> Upload Photos</TabsTrigger>
+                  <TabsTrigger value="manual"><PenSquare className="mr-2" /> Manual Entry</TabsTrigger>
+                  <TabsTrigger value="faq"><HelpCircle className="mr-2" /> FAQ</TabsTrigger>
+                </TabsList>
+                <TabsContent value="upload">
+                  <Uploader 
+                    onDataExtracted={handleDataExtracted} 
+                    isProcessing={isProcessing}
+                    setProcessing={setIsProcessing} 
+                  />
+                </TabsContent>
+                <TabsContent value="manual">
+                  <ManualEntryForm onDataAdded={handleManualAdd} />
+                </TabsContent>
+                <TabsContent value="faq">
+                  <Faq />
+                </TabsContent>
+              </CardContent>
+            </Card>
+          </Tabs>
+        </div>
         <ReadingsTable readings={readings} setReadings={setReadings} />
         <ExtractedDataDialog
           isOpen={isDialogOpen}

@@ -103,9 +103,11 @@ export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
           </CardDescription>
         </CardHeader>
       </div>
-       <div className="print-only hidden pt-8">
-        <h1 className="text-2xl font-bold text-center mb-2 font-headline">ChronoGrapher Readings</h1>
-        <p className="text-center text-sm text-muted-foreground mb-6">{format(new Date(), 'PP')}</p>
+       <div className="print-only hidden">
+        <div className="pt-8">
+            <h1 className="text-2xl font-bold text-center mb-2 font-headline">ChronoGrapher Readings</h1>
+            <p className="text-center text-sm text-muted-foreground mb-6">{format(new Date(), 'PP')}</p>
+        </div>
       </div>
       <CardContent>
         <Table>
