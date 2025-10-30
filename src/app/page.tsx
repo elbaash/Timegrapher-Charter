@@ -8,7 +8,8 @@ import type { TimegrapherReading } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ManualEntryForm } from "@/components/manual-entry-form";
-import { UploadCloud, PenSquare } from "lucide-react";
+import { UploadCloud, PenSquare, HelpCircle } from "lucide-react";
+import { Faq } from "@/components/faq";
 
 export default function Home() {
   const [readings, setReadings] = useState<TimegrapherReading[]>([]);
@@ -34,13 +35,14 @@ export default function Home() {
             <CardHeader>
               <CardTitle className="font-headline">Analyze Timegrapher Data</CardTitle>
               <CardDescription>
-                Upload a photo or enter data manually to extract the performance metrics of your watch.
+                Upload a photo, enter data manually, or learn how to use your timegrapher.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsList className="grid w-full grid-cols-3 mb-6">
                 <TabsTrigger value="upload"><UploadCloud className="mr-2" /> Upload Photo</TabsTrigger>
                 <TabsTrigger value="manual"><PenSquare className="mr-2" /> Manual Entry</TabsTrigger>
+                <TabsTrigger value="faq"><HelpCircle className="mr-2" /> FAQ</TabsTrigger>
               </TabsList>
               <TabsContent value="upload">
                 <Uploader 
@@ -51,6 +53,9 @@ export default function Home() {
               </TabsContent>
               <TabsContent value="manual">
                 <ManualEntryForm onDataAdded={handleDataExtracted} />
+              </TabsContent>
+              <TabsContent value="faq">
+                <Faq />
               </TabsContent>
             </CardContent>
           </Card>
