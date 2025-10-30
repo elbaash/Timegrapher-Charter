@@ -95,50 +95,54 @@ export function ReadingsTable({ readings }: ReadingsTableProps) {
         <p className="text-center text-sm text-muted-foreground mb-6">{format(new Date(), 'PP')}</p>
       </div>
       <CardContent>
-        {readings.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[180px]">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" /> Timestamp
-                  </div>
-                </TableHead>
-                <TableHead>
-                   <div className="flex items-center gap-2">
-                    <Gauge className="h-4 w-4" /> Rate (s/d)
-                  </div>
-                </TableHead>
-                <TableHead>
-                  <div className="flex items-center gap-2">
-                    <Activity className="h-4 w-4" /> Amplitude (°)
-                  </div>
-                </TableHead>
-                <TableHead>
-                  <div className="flex items-center gap-2">
-                    <HeartPulse className="h-4 w-4" /> Beat Error (ms)
-                  </div>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {readings.map((reading) => (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[180px]">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" /> Timestamp
+                </div>
+              </TableHead>
+              <TableHead>
+                 <div className="flex items-center gap-2">
+                  <Gauge className="h-4 w-4" /> Rate (s/d)
+                </div>
+              </TableHead>
+              <TableHead>
+                <div className="flex items-center gap-2">
+                  <Activity className="h-4 w-4" /> Amplitude (°)
+                </div>
+              </TableHead>
+              <TableHead>
+                <div className="flex items-center gap-2">
+                  <HeartPulse className="h-4 w-4" /> Beat Error (ms)
+                </div>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {readings.length > 0 ? (
+              readings.map((reading) => (
                 <TableRow key={reading.id}>
                   <TableCell>{format(reading.timestamp, "Pp")}</TableCell>
                   <TableCell className="font-medium">{reading.rate}</TableCell>
                   <TableCell>{reading.amplitude}</TableCell>
                   <TableCell>{reading.beatError}</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <div className="flex flex-col items-center justify-center gap-4 text-center py-16 no-print">
-            <ListX className="h-16 w-16 text-muted-foreground/50" />
-            <h3 className="text-xl font-semibold tracking-tight font-headline">No Readings Yet</h3>
-            <p className="text-muted-foreground">Upload an image to start recording data.</p>
-          </div>
-        )}
+              ))
+            ) : (
+              <TableRow className="no-print">
+                <TableCell colSpan={4} className="h-48 text-center">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <ListX className="h-16 w-16 text-muted-foreground/50" />
+                    <h3 className="text-xl font-semibold tracking-tight font-headline">No Readings Yet</h3>
+                    <p className="text-muted-foreground">Upload an image to start recording data.</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </CardContent>
        {readings.length > 0 && (
         <CardFooter className="justify-end gap-2 no-print">
