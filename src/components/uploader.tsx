@@ -4,102 +4,134 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { analyzeImage } from "@/app/actions";
-import { UploadCloud, X, LoaderCircle, CheckCircle, Camera } from "lucide-react";
+import { UploadCloud, X, LoaderCircle, CheckCircle, Camera, Image as ImageIcon, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { POSITIONS } from "@/types";
 
 type UploaderProps = {
-  onDataExtracted: (data: any) => void;
+  onDataExtracted: (data: any[]) => void;
   isProcessing: boolean;
   setProcessing: (isProcessing: boolean) => void;
 };
 
+type FilePreview = {
+  file: File;
+  previewUrl: string;
+};
+
 export function Uploader({ onDataExtracted, isProcessing, setProcessing }: UploaderProps) {
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [files, setFiles] = useState<FilePreview[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [customerName, setCustomerName] = useState("");
+  const [refNumber, setRefNumber] = useState("A");
+
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | undefined>(undefined);
-  
   const { toast } = useToast();
 
-  useEffect(() => {
-    const getCameraPermission = async () => {
-      try {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          console.log("Camera API not available in this browser.");
-          setHasCameraPermission(false);
-          return;
-        }
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        setHasCameraPermission(true);
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (error) {
-        console.error("Error accessing camera:", error);
-        setHasCameraPermission(false);
-      }
-    };
-
-    getCameraPermission();
-  }, []);
-
-
-  const handleFileChange = (selectedFile: File | null) => {
-    if (selectedFile) {
-      if (selectedFile.size > 4 * 1024 * 1024) { // 4MB limit
+  const handleFilesChange = (selectedFiles: FileList | null) => {
+    if (selectedFiles) {
+      const newFilePreviews: FilePreview[] = [];
+      const currentFileCount = files.length;
+      if (currentFileCount + selectedFiles.length > 6) {
         toast({
           variant: "destructive",
-          title: "File too large",
-          description: "Please upload an image smaller than 4MB.",
+          title: "Too many files",
+          description: "You can upload a maximum of 6 images.",
         });
         return;
       }
-      setFile(selectedFile);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreview(reader.result as string);
-      };
-      reader.readAsDataURL(selectedFile);
-    }
-  };
 
-  const onFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleFileChange(e.target.files ? e.target.files[0] : null);
+      Array.from(selectedFiles).forEach(file => {
+        if (file.size > 4 * 1024 * 1024) { // 4MB limit
+          toast({
+            variant: "destructive",
+            title: "File too large",
+            description: `${file.name} is larger than 4MB.`,
+          });
+          return;
+        }
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          newFilePreviews.push({ file, previewUrl: reader.result as string });
+          // Check if all files have been read
+          if (newFilePreviews.length === selectedFiles.length) {
+            setFiles(prev => [...prev, ...newFilePreviews]);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
   };
   
-  const clearFile = () => {
-    setFile(null);
-    setPreview(null);
-    if(fileInputRef.current) {
+  const onFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleFilesChange(e.target.files);
+  };
+
+  const removeFile = (index: number) => {
+    setFiles(files.filter((_, i) => i !== index));
+     if(fileInputRef.current) {
       fileInputRef.current.value = "";
     }
-    if (cameraInputRef.current) {
-      cameraInputRef.current.value = "";
+  };
+  
+  const clearAllFiles = () => {
+    setFiles([]);
+    if(fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
   const handleAnalyze = async () => {
-    if (!preview) return;
+    if (files.length === 0) return;
     setProcessing(true);
+    
     try {
-      const result = await analyzeImage(preview);
-      if (result.error) {
-        throw new Error(result.error);
-      }
-      onDataExtracted(result.data);
-      toast({
+      const results = await Promise.all(
+        files.map(async (filePreview) => {
+          const result = await analyzeImage(filePreview.previewUrl);
+          if (result.error) {
+            toast({
+              variant: "destructive",
+              title: `Analysis Failed for ${filePreview.file.name}`,
+              description: result.error,
+            });
+            return null; // Return null for failed analyses
+          }
+           // Assign customer and ref number to each result
+          return {
+            ...result.data,
+            customerName,
+            refNumber,
+          };
+        })
+      );
+      
+      const successfulResults = results.filter(res => res !== null);
+
+      if (successfulResults.length > 0) {
+        onDataExtracted(successfulResults);
+        toast({
           title: "Analysis Complete",
-          description: "Data has been successfully extracted.",
+          description: `${successfulResults.length} of ${files.length} images analyzed successfully.`,
           action: <div className="p-1 rounded-full bg-green-500"><CheckCircle className="h-5 w-5 text-white" /></div>,
-      });
-      clearFile();
+        });
+        clearAllFiles();
+        setCustomerName("");
+        setRefNumber("A");
+      } else {
+         toast({
+          variant: "destructive",
+          title: "Analysis Failed",
+          description: "Could not extract data from any of the images.",
+        });
+      }
+
     } catch (e: unknown) {
-      const error = e instanceof Error ? e.message : "An unknown error occurred.";
+      const error = e instanceof Error ? e.message : "An unknown error occurred during batch analysis.";
       toast({
         variant: "destructive",
         title: "Analysis Failed",
@@ -124,79 +156,96 @@ export function Uploader({ onDataExtracted, isProcessing, setProcessing }: Uploa
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileChange(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files) {
+      handleFilesChange(e.dataTransfer.files);
     }
   }, []);
 
   return (
     <div className="flex flex-col items-center gap-4">
-      {preview ? (
-        <div className="relative w-full max-w-md aspect-video rounded-lg overflow-hidden border-2 border-dashed border-border flex items-center justify-center">
-          <Image src={preview} alt="Image preview" layout="fill" objectFit="contain" />
-           <Button variant="destructive" size="icon" className="absolute top-2 right-2 z-10 h-8 w-8 rounded-full" onClick={clearFile} disabled={isProcessing}>
-            <X className="h-4 w-4" />
-          </Button>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-lg">
+        <div>
+          <Label htmlFor="customerName">Customer Name</Label>
+          <Input 
+            id="customerName" 
+            placeholder="John Doe" 
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            disabled={isProcessing}
+          />
+        </div>
+        <div>
+          <Label htmlFor="refNumber">Ref. Number</Label>
+          <Input 
+            id="refNumber" 
+            placeholder="A123" 
+            value={refNumber}
+            onChange={(e) => setRefNumber(e.target.value)}
+            disabled={isProcessing}
+          />
+        </div>
+      </div>
+      
+      {files.length > 0 ? (
+        <div className="w-full max-w-lg">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+            {files.map((file, index) => (
+              <div key={index} className="relative aspect-square rounded-lg overflow-hidden border">
+                <Image src={file.previewUrl} alt={`Preview ${index + 1}`} layout="fill" objectFit="cover" />
+                <Button variant="destructive" size="icon" className="absolute top-1 right-1 z-10 h-6 w-6 rounded-full" onClick={() => removeFile(index)} disabled={isProcessing}>
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            ))}
+             {files.length < 6 && (
+              <div
+                onClick={() => !isProcessing && fileInputRef.current?.click()}
+                className="flex items-center justify-center aspect-square rounded-lg border-2 border-dashed border-border cursor-pointer hover:border-primary transition-colors">
+                <ImageIcon className="h-8 w-8 text-muted-foreground" />
+              </div>
+            )}
+          </div>
         </div>
       ) : (
-        <div className="w-full max-w-md">
-          <div
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-            className={cn(
-              "w-full flex flex-col items-center justify-center p-10 border-2 border-dashed rounded-lg cursor-pointer transition-colors",
-              isDragging ? "border-primary bg-accent/20" : "border-border hover:border-primary/50"
-            )}
-          >
-            <UploadCloud className="h-12 w-12 text-muted-foreground" />
-            <p className="mt-4 text-sm text-muted-foreground">
-              <span className="font-semibold text-accent">Click to upload</span> or drag and drop
-            </p>
-            <p className="text-xs text-muted-foreground/80">PNG, JPG, or WEBP (max. 4MB)</p>
-          </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/png, image/jpeg, image/webp"
-            className="hidden"
-            onChange={onFileInputChange}
-            disabled={isProcessing}
-          />
-           <input
-            ref={cameraInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="hidden"
-            onChange={onFileInputChange}
-            disabled={isProcessing}
-          />
-           <video ref={videoRef} className="w-full aspect-video rounded-md hidden" autoPlay muted />
-            { hasCameraPermission === false && (
-                <Alert variant="destructive" className="mt-4">
-                    <AlertTitle>Camera Access Required</AlertTitle>
-                    <AlertDescription>
-                        Please allow camera access to use this feature.
-                    </AlertDescription>
-                </Alert>
-            )}
+        <div
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+          onClick={() => !isProcessing && fileInputRef.current?.click()}
+          className={cn(
+            "w-full max-w-lg flex flex-col items-center justify-center p-10 border-2 border-dashed rounded-lg cursor-pointer transition-colors",
+            isDragging ? "border-primary bg-accent/20" : "border-border hover:border-primary/50"
+          )}
+        >
+          <UploadCloud className="h-12 w-12 text-muted-foreground" />
+          <p className="mt-4 text-sm text-muted-foreground">
+            <span className="font-semibold text-accent">Click to upload</span> or drag and drop
+          </p>
+          <p className="text-xs text-muted-foreground/80">Up to 6 images (PNG, JPG, WEBP)</p>
         </div>
       )}
-      <div className="flex gap-2 w-full max-w-md">
-         {!preview && (
-          <Button variant="outline" className="w-1/3" onClick={() => cameraInputRef.current?.click()} disabled={isProcessing || hasCameraPermission === false}>
-            <Camera className="mr-2 h-4 w-4" />
-            Camera
+       <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png, image/jpeg, image/webp"
+          className="hidden"
+          onChange={onFileInputChange}
+          disabled={isProcessing || files.length >= 6}
+          multiple
+        />
+
+      <div className="flex gap-2 w-full max-w-lg">
+        {files.length > 0 && (
+          <Button variant="outline" onClick={clearAllFiles} disabled={isProcessing}>
+            <Trash2 className="mr-2" /> Clear
           </Button>
         )}
-        <Button onClick={handleAnalyze} disabled={!file || isProcessing} className="w-full" size="lg">
+        <Button onClick={handleAnalyze} disabled={files.length === 0 || isProcessing || !customerName || !refNumber} className="w-full" size="lg">
           {isProcessing ? (
             <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
           ) : null}
-          {isProcessing ? "Analyzing..." : "Analyze Image"}
+          {isProcessing ? `Analyzing ${files.length} images...` : `Analyze ${files.length} Image${files.length === 1 ? "" : "s"}`}
         </Button>
       </div>
     </div>

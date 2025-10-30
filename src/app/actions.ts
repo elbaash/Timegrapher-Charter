@@ -9,7 +9,7 @@ export async function analyzeImage(photoDataUri: string) {
     }
     const result = await extractTimegrapherData({ photoDataUri });
     if (!result.rate && !result.amplitude && !result.beatError) {
-      throw new Error("Could not extract any data from the image. Please try a clearer image.");
+      return { data: { ...result, position: result.position || 'Unknown' }, error: "Could not extract all data fields, but some were found." };
     }
     return { data: result, error: null };
   } catch (e: unknown) {

@@ -12,14 +12,22 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import type { TimegrapherReading } from "@/types";
+import { TimegrapherReading, POSITIONS } from "@/types";
 import { PlusCircle } from "lucide-react";
 
 const formSchema = z.object({
   customerName: z.string().min(1, "Customer name is required."),
   refNumber: z.string().min(1, "Reference number is required."),
+  position: z.enum(POSITIONS),
   rate: z.string().min(1, "Rate is required."),
   amplitude: z.string().min(1, "Amplitude is required."),
   beatError: z.string().min(1, "Beat error is required."),
@@ -37,6 +45,7 @@ export function ManualEntryForm({ onDataAdded }: ManualEntryFormProps) {
     defaultValues: {
       customerName: "",
       refNumber: "A",
+      position: "Dial Up",
       rate: "",
       amplitude: "",
       beatError: "",
@@ -50,7 +59,12 @@ export function ManualEntryForm({ onDataAdded }: ManualEntryFormProps) {
       title: "Reading Added",
       description: "The manual entry has been recorded.",
     });
-    form.reset();
+    form.reset({
+      ...form.getValues(),
+      rate: "",
+      amplitude: "",
+      beatError: "",
+    });
   }
 
   return (
@@ -85,6 +99,26 @@ export function ManualEntryForm({ onDataAdded }: ManualEntryFormProps) {
               )}
             />
           </div>
+           <FormField
+              control={form.control}
+              name="position"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Position</FormLabel>
+                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a position" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {POSITIONS.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <FormField
               control={form.control}

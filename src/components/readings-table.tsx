@@ -19,15 +19,24 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import type { TimegrapherReading } from "@/types";
-import { Clock, Gauge, Activity, HeartPulse, Share2, Printer, ListX, User, Hash, Zap } from "lucide-react";
+import { Clock, Gauge, Activity, HeartPulse, Share2, Printer, ListX, User, Hash, Zap, Trash2, MapPin } from "lucide-react";
 import { format } from "date-fns";
 
 type ReadingsTableProps = {
   readings: TimegrapherReading[];
+  setReadings: React.Dispatch<React.SetStateAction<TimegrapherReading[]>>;
 };
 
-export function ReadingsTable({ readings }: ReadingsTableProps) {
+export function ReadingsTable({ readings, setReadings }: ReadingsTableProps) {
   const { toast } = useToast();
+
+  const handleClearAll = () => {
+    setReadings([]);
+    toast({
+      title: "Readings Cleared",
+      description: "All entries have been removed from the table.",
+    });
+  };
 
   const formatReadingsAsText = () => {
     if (readings.length === 0) return "No readings to share.";
@@ -37,9 +46,10 @@ export function ReadingsTable({ readings }: ReadingsTableProps) {
       text += `${index + 1}. ${format(reading.timestamp, 'Pp')}\n`;
       text += `   - Customer: ${reading.customerName}\n`;
       text += `   - Ref #: ${reading.refNumber}\n`;
-      text += `   - Rate: ${reading.rate}\n`;
-      text += `   - Amplitude: ${reading.amplitude}\n`;
-      text += `   - Beat Error: ${reading.beatError}\n`;
+      text += `   - Position: ${reading.position}\n`;
+      text += `   - Rate: ${reading.rate} s/d\n`;
+      text += `   - Amplitude: ${reading.amplitude}°\n`;
+      text += `   - Beat Error: ${reading.beatError} ms\n`;
       text += `   - Lift Angle: ${reading.liftAngle}°\n\n`;
     });
     return text;
@@ -117,6 +127,11 @@ export function ReadingsTable({ readings }: ReadingsTableProps) {
                 </div>
               </TableHead>
               <TableHead>
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" /> Position
+                </div>
+              </TableHead>
+              <TableHead>
                  <div className="flex items-center gap-2">
                   <Gauge className="h-4 w-4" /> Rate (s/d)
                 </div>
@@ -145,6 +160,7 @@ export function ReadingsTable({ readings }: ReadingsTableProps) {
                   <TableCell>{format(reading.timestamp, "Pp")}</TableCell>
                   <TableCell>{reading.customerName}</TableCell>
                   <TableCell>{reading.refNumber}</TableCell>
+                  <TableCell>{reading.position}</TableCell>
                   <TableCell className="font-medium">{reading.rate}</TableCell>
                   <TableCell>{reading.amplitude}</TableCell>
                   <TableCell>{reading.beatError}</TableCell>
@@ -152,21 +168,28 @@ export function ReadingsTable({ readings }: ReadingsTableProps) {
                 </TableRow>
               ))
             ) : (
-              <TableRow className="no-print">
-                <TableCell colSpan={7} className="h-48 text-center">
-                  <div className="flex flex-col items-center justify-center gap-4">
-                    <ListX className="h-16 w-16 text-muted-foreground/50" />
-                    <h3 className="text-xl font-semibold tracking-tight font-headline">No Readings Yet</h3>
-                    <p className="text-muted-foreground">Upload an image or enter data manually to start.</p>
-                  </div>
+              <TableRow>
+                <TableCell colSpan={8} className="h-24 text-center">
+                  {readings.length === 0 ? "No readings yet." : ""}
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
+         {readings.length === 0 && (
+          <div className="flex flex-col items-center justify-center gap-4 py-16 no-print">
+            <ListX className="h-16 w-16 text-muted-foreground/50" />
+            <h3 className="text-xl font-semibold tracking-tight font-headline">No Readings Yet</h3>
+            <p className="text-muted-foreground">Upload an image or enter data manually to start.</p>
+          </div>
+        )}
       </CardContent>
        {readings.length > 0 && (
         <CardFooter className="justify-end gap-2 no-print">
+          <Button variant="destructive" onClick={handleClearAll}>
+            <Trash2 className="mr-2 h-4 w-4" />
+            Clear All
+          </Button>
           <Button variant="outline" onClick={handleShare}>
             <Share2 className="mr-2 h-4 w-4" />
             Share

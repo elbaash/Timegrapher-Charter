@@ -10,22 +10,39 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ManualEntryForm } from "@/components/manual-entry-form";
 import { UploadCloud, PenSquare, HelpCircle } from "lucide-react";
 import { Faq } from "@/components/faq";
+import { ExtractedDataDialog } from "@/components/extracted-data-dialog";
 
 export default function Home() {
   const [readings, setReadings] = useState<TimegrapherReading[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [extractedData, setExtractedData] = useState<Omit<TimegrapherReading, "id" | "timestamp">[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const handleDataExtracted = (data: Omit<TimegrapherReading, "id" | "timestamp">) => {
+
+  const handleDataExtracted = (data: Omit<TimegrapherReading, "id" | "timestamp">[]) => {
+    setExtractedData(data);
+    setIsDialogOpen(true);
+  };
+  
+  const handleDialogSave = (editedData: Omit<TimegrapherReading, "id" | "timestamp">[]) => {
+     const newReadings: TimegrapherReading[] = editedData.map(reading => ({
+      id: `${new Date().toISOString()}-${Math.random()}`, // simple unique id
+      timestamp: new Date(),
+      ...reading,
+    }));
+    setReadings(prev => [...newReadings, ...prev]);
+    setIsDialogOpen(false);
+  };
+
+  const handleManualAdd = (data: Omit<TimegrapherReading, "id" | "timestamp">) => {
     const newReading: TimegrapherReading = {
       id: new Date().toISOString(), // simple unique id
       timestamp: new Date(),
-      customerName: data.customerName || 'N/A',
-      refNumber: data.refNumber || 'N/A',
-      liftAngle: data.liftAngle || '52',
       ...data,
     };
     setReadings((prev) => [newReading, ...prev]);
   };
+
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
@@ -36,12 +53,12 @@ export default function Home() {
             <CardHeader>
               <CardTitle className="font-headline">Analyze Timegrapher Data</CardTitle>
               <CardDescription>
-                Upload a photo, enter data manually, or learn how to use your timegrapher.
+                Upload photos, enter data manually, or learn how to use your timegrapher.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <TabsList className="grid w-full grid-cols-3 mb-6">
-                <TabsTrigger value="upload"><UploadCloud className="mr-2" /> Upload Photo</TabsTrigger>
+                <TabsTrigger value="upload"><UploadCloud className="mr-2" /> Upload Photos</TabsTrigger>
                 <TabsTrigger value="manual"><PenSquare className="mr-2" /> Manual Entry</TabsTrigger>
                 <TabsTrigger value="faq"><HelpCircle className="mr-2" /> FAQ</TabsTrigger>
               </TabsList>
@@ -53,7 +70,7 @@ export default function Home() {
                 />
               </TabsContent>
               <TabsContent value="manual">
-                <ManualEntryForm onDataAdded={handleDataExtracted} />
+                <ManualEntryForm onDataAdded={handleManualAdd} />
               </TabsContent>
               <TabsContent value="faq">
                 <Faq />
@@ -61,7 +78,13 @@ export default function Home() {
             </CardContent>
           </Card>
         </Tabs>
-        <ReadingsTable readings={readings} />
+        <ReadingsTable readings={readings} setReadings={setReadings} />
+        <ExtractedDataDialog
+          isOpen={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
+          extractedData={extractedData}
+          onSave={handleDialogSave}
+        />
       </main>
     </div>
   );
