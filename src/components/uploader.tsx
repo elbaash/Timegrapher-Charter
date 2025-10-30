@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
@@ -10,10 +11,10 @@ import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { POSITIONS } from "@/types";
+import { POSITIONS, AnalyzedImage } from "@/types";
 
 type UploaderProps = {
-  onDataExtracted: (data: any[]) => void;
+  onDataExtracted: (data: AnalyzedImage[]) => void;
   isProcessing: boolean;
   setProcessing: (isProcessing: boolean) => void;
 };
@@ -90,7 +91,7 @@ export function Uploader({ onDataExtracted, isProcessing, setProcessing }: Uploa
     setProcessing(true);
     
     try {
-      const results = await Promise.all(
+      const results: (AnalyzedImage | null)[] = await Promise.all(
         files.map(async (filePreview) => {
           const result = await analyzeImage(filePreview.previewUrl);
           if (result.error) {
@@ -103,14 +104,17 @@ export function Uploader({ onDataExtracted, isProcessing, setProcessing }: Uploa
           }
            // Assign customer and ref number to each result
           return {
-            ...result.data,
-            customerName,
-            refNumber,
+            imageUrl: filePreview.previewUrl,
+            data: {
+              ...result.data,
+              customerName,
+              refNumber,
+            }
           };
         })
       );
       
-      const successfulResults = results.filter(res => res !== null);
+      const successfulResults = results.filter((res): res is AnalyzedImage => res !== null);
 
       if (successfulResults.length > 0) {
         onDataExtracted(successfulResults);

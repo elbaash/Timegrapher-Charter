@@ -20,18 +20,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TimegrapherReading, POSITIONS, Position } from "@/types";
+import { TimegrapherReading, POSITIONS, Position, AnalyzedImage } from "@/types";
 import { Save, LoaderCircle } from "lucide-react";
+import Image from "next/image";
 
 type ExtractedDataDialogProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  extractedData: Omit<TimegrapherReading, "id" | "timestamp">[];
-  onSave: (editedData: Omit<TimegrapherReading, "id" | "timestamp">[]) => void;
+  extractedData: AnalyzedImage[];
+  onSave: (editedData: AnalyzedImage[]) => void;
 };
 
 export function ExtractedDataDialog({ isOpen, onOpenChange, extractedData, onSave }: ExtractedDataDialogProps) {
-  const [editableData, setEditableData] = useState<Omit<TimegrapherReading, "id" | "timestamp">[]>([]);
+  const [editableData, setEditableData] = useState<AnalyzedImage[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -42,13 +43,25 @@ export function ExtractedDataDialog({ isOpen, onOpenChange, extractedData, onSav
 
   const handleInputChange = (index: number, field: keyof Omit<TimegrapherReading, "id" | "timestamp" | "position">, value: string) => {
     const newData = [...editableData];
-    newData[index] = { ...newData[index], [field]: value };
+    newData[index] = { 
+        ...newData[index],
+        data: {
+            ...newData[index].data,
+            [field]: value 
+        }
+    };
     setEditableData(newData);
   };
   
   const handlePositionChange = (index: number, value: Position) => {
     const newData = [...editableData];
-    newData[index] = { ...newData[index], position: value };
+    newData[index] = { 
+        ...newData[index],
+        data: {
+            ...newData[index].data,
+            position: value 
+        }
+    };
     setEditableData(newData);
   };
 
@@ -73,46 +86,55 @@ export function ExtractedDataDialog({ isOpen, onOpenChange, extractedData, onSav
         </DialogHeader>
         <div className="flex-grow overflow-y-auto pr-4">
           <div className="space-y-6">
-            {editableData.map((data, index) => (
+            {editableData.map((item, index) => (
               <div key={index} className="p-4 border rounded-lg space-y-4">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <Label htmlFor={`customerName-${index}`}>Customer Name</Label>
-                        <Input
-                        id={`customerName-${index}`}
-                        value={data.customerName}
-                        onChange={(e) => handleInputChange(index, 'customerName', e.target.value)}
-                        />
+                <div className="flex gap-4">
+                  <div className="w-1/4 flex-shrink-0">
+                    <div className="aspect-square relative rounded-md overflow-hidden border">
+                      <Image src={item.imageUrl} alt={`Preview ${index + 1}`} layout="fill" objectFit="cover" />
+                    </div>
+                  </div>
+                  <div className="flex-grow space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <Label htmlFor={`customerName-${index}`}>Customer Name</Label>
+                            <Input
+                            id={`customerName-${index}`}
+                            value={item.data.customerName}
+                            onChange={(e) => handleInputChange(index, 'customerName', e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor={`refNumber-${index}`}>Ref. Number</Label>
+                            <Input
+                            id={`refNumber-${index}`}
+                            value={item.data.refNumber}
+                            onChange={(e) => handleInputChange(index, 'refNumber', e.target.value)}
+                            />
+                        </div>
                     </div>
                     <div>
-                        <Label htmlFor={`refNumber-${index}`}>Ref. Number</Label>
-                        <Input
-                        id={`refNumber-${index}`}
-                        value={data.refNumber}
-                        onChange={(e) => handleInputChange(index, 'refNumber', e.target.value)}
-                        />
+                      <Label htmlFor={`position-${index}`}>Position</Label>
+                      <Select
+                        value={item.data.position}
+                        onValueChange={(value: Position) => handlePositionChange(index, value)}
+                      >
+                        <SelectTrigger id={`position-${index}`}>
+                          <SelectValue placeholder="Select position" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {POSITIONS.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                     </div>
-                </div>
-                 <div>
-                  <Label htmlFor={`position-${index}`}>Position</Label>
-                  <Select
-                    value={data.position}
-                    onValueChange={(value: Position) => handlePositionChange(index, value)}
-                  >
-                    <SelectTrigger id={`position-${index}`}>
-                      <SelectValue placeholder="Select position" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {POSITIONS.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
                     <Label htmlFor={`rate-${index}`}>Rate (s/d)</Label>
                     <Input
                       id={`rate-${index}`}
-                      value={data.rate}
+                      value={item.data.rate}
                       onChange={(e) => handleInputChange(index, 'rate', e.target.value)}
                     />
                   </div>
@@ -120,7 +142,7 @@ export function ExtractedDataDialog({ isOpen, onOpenChange, extractedData, onSav
                     <Label htmlFor={`amplitude-${index}`}>Amplitude (°)</Label>
                     <Input
                       id={`amplitude-${index}`}
-                      value={data.amplitude}
+                      value={item.data.amplitude}
                       onChange={(e) => handleInputChange(index, 'amplitude', e.target.value)}
                     />
                   </div>
@@ -128,7 +150,7 @@ export function ExtractedDataDialog({ isOpen, onOpenChange, extractedData, onSav
                     <Label htmlFor={`beatError-${index}`}>Beat Error (ms)</Label>
                     <Input
                       id={`beatError-${index}`}
-                      value={data.beatError}
+                      value={item.data.beatError}
                       onChange={(e) => handleInputChange(index, 'beatError', e.target.value)}
                     />
                   </div>
@@ -136,7 +158,7 @@ export function ExtractedDataDialog({ isOpen, onOpenChange, extractedData, onSav
                     <Label htmlFor={`liftAngle-${index}`}>Lift Angle (°)</Label>
                     <Input
                       id={`liftAngle-${index}`}
-                      value={data.liftAngle || "52"}
+                      value={item.data.liftAngle || "52"}
                        onChange={(e) => handleInputChange(index, 'liftAngle', e.target.value)}
                     />
                   </div>

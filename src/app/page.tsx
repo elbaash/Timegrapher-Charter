@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -11,24 +12,25 @@ import { ManualEntryForm } from "@/components/manual-entry-form";
 import { UploadCloud, PenSquare, HelpCircle } from "lucide-react";
 import { Faq } from "@/components/faq";
 import { ExtractedDataDialog } from "@/components/extracted-data-dialog";
+import { AnalyzedImage } from "@/types";
 
 export default function Home() {
   const [readings, setReadings] = useState<TimegrapherReading[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [extractedData, setExtractedData] = useState<Omit<TimegrapherReading, "id" | "timestamp">[]>([]);
+  const [extractedData, setExtractedData] = useState<AnalyzedImage[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
 
-  const handleDataExtracted = (data: Omit<TimegrapherReading, "id" | "timestamp">[]) => {
+  const handleDataExtracted = (data: AnalyzedImage[]) => {
     setExtractedData(data);
     setIsDialogOpen(true);
   };
   
-  const handleDialogSave = (editedData: Omit<TimegrapherReading, "id" | "timestamp">[]) => {
-     const newReadings: TimegrapherReading[] = editedData.map(reading => ({
+  const handleDialogSave = (editedData: AnalyzedImage[]) => {
+     const newReadings: TimegrapherReading[] = editedData.map(item => ({
       id: `${new Date().toISOString()}-${Math.random()}`, // simple unique id
       timestamp: new Date(),
-      ...reading,
+      ...item.data,
     }));
     setReadings(prev => [...newReadings, ...prev]);
     setIsDialogOpen(false);
