@@ -28,9 +28,10 @@ type ReadingsTableProps = {
   setReadings: React.Dispatch<React.SetStateAction<TimegrapherReading[]>>;
   customerName: string;
   refNumber: string;
+  onSave: () => void;
 };
 
-export function ReadingsTable({ readings, setReadings, customerName, refNumber }: ReadingsTableProps) {
+export function ReadingsTable({ readings, setReadings, customerName, refNumber, onSave }: ReadingsTableProps) {
   const { toast } = useToast();
 
   const handleClearAll = () => {
@@ -38,15 +39,6 @@ export function ReadingsTable({ readings, setReadings, customerName, refNumber }
     toast({
       title: "Readings Cleared",
       description: "All entries have been removed from the current session.",
-    });
-  };
-
-  const handleSave = () => {
-    // In the new architecture, data is saved automatically.
-    // This button can provide user feedback.
-    toast({
-      title: "Session Saved",
-      description: `Readings for ${customerName} (${refNumber}) are saved.`,
     });
   };
 
@@ -149,7 +141,7 @@ export function ReadingsTable({ readings, setReadings, customerName, refNumber }
         <CardHeader>
           <CardTitle className="font-headline">Current Session</CardTitle>
           <CardDescription>
-            Readings for <span className="font-bold">{customerName} ({refNumber})</span>. Add or upload data to this session.
+            Readings for <span className="font-bold">{customerName || "New Customer"} ({refNumber || "N/A"})</span>. Add or upload data to this session.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0 flex-grow">
@@ -219,12 +211,12 @@ export function ReadingsTable({ readings, setReadings, customerName, refNumber }
             </div>
           )}
         </CardContent>
-        <CardFooter className="justify-end gap-2 mt-auto">
+        <CardFooter className="justify-end gap-2 mt-auto no-print">
           <Button variant="destructive" onClick={handleClearAll} disabled={readings.length === 0}>
             <Trash2 className="mr-2 h-4 w-4" />
-            Clear Session
+            Clear Current
           </Button>
-           <Button variant="secondary" onClick={handleSave} disabled={readings.length === 0}>
+           <Button variant="secondary" onClick={onSave}>
             <Save className="mr-2 h-4 w-4" />
             Save Session
           </Button>
@@ -241,3 +233,5 @@ export function ReadingsTable({ readings, setReadings, customerName, refNumber }
     </>
   );
 }
+
+    
