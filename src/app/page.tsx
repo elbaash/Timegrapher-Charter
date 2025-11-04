@@ -35,9 +35,9 @@ const initialRefNumber = "B456";
 export default function Home() {
   const [activeTab, setActiveTab] = useState("new");
   const [sessions, setSessions] = useState<CustomerSession[]>([]);
-  const [activeReadings, setActiveReadings] = useState<TimegrapherReading[]>(initialReadings);
-  const [activeCustomerName, setActiveCustomerName] = useState<string>(initialCustomerName);
-  const [activeRefNumber, setActiveRefNumber] = useState<string>(initialRefNumber);
+  const [activeReadings, setActiveReadings] = useState<TimegrapherReading[]>([]);
+  const [activeCustomerName, setActiveCustomerName] = useState<string>("");
+  const [activeRefNumber, setActiveRefNumber] = useState<string>("");
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isProcessing, setProcessing] = useState(false);
   const [extractedData, setExtractedData] = useState<AnalyzedImage[]>([]);
@@ -50,8 +50,26 @@ export default function Home() {
       if (storedSessions) {
         setSessions(JSON.parse(storedSessions));
       }
+
+      const storedCurrentSession = localStorage.getItem("chronoCurrentSession");
+      if (storedCurrentSession) {
+        const { readings, customerName, refNumber, sessionId } = JSON.parse(storedCurrentSession);
+        setActiveReadings(readings);
+        setActiveCustomerName(customerName);
+        setActiveRefNumber(refNumber);
+        setActiveSessionId(sessionId);
+      } else {
+        // If no saved session, load initial example data
+        setActiveReadings(initialReadings);
+        setActiveCustomerName(initialCustomerName);
+        setActiveRefNumber(initialRefNumber);
+      }
     } catch (error) {
-      console.error("Failed to load sessions from localStorage", error);
+      console.error("Failed to load state from localStorage", error);
+        // Fallback to initial data if localStorage fails
+        setActiveReadings(initialReadings);
+        setActiveCustomerName(initialCustomerName);
+        setActiveRefNumber(initialRefNumber);
     }
   }, []);
 
@@ -62,6 +80,21 @@ export default function Home() {
       console.error("Failed to save sessions to localStorage", error);
     }
   }, [sessions]);
+  
+  useEffect(() => {
+    try {
+      const currentSession = {
+        readings: activeReadings,
+        customerName: activeCustomerName,
+        refNumber: activeRefNumber,
+        sessionId: activeSessionId
+      };
+      localStorage.setItem("chronoCurrentSession", JSON.stringify(currentSession));
+    } catch (error) {
+      console.error("Failed to save current session to localStorage", error);
+    }
+  }, [activeReadings, activeCustomerName, activeRefNumber, activeSessionId]);
+
 
   const handleDataExtracted = (data: AnalyzedImage[]) => {
     const sortOrder: Position[] = ['Dial Down', 'Crown Up', 'Crown Down', 'Crown Left', 'Crown Right', 'Dial Up'];
@@ -72,9 +105,9 @@ export default function Home() {
       const indexA = sortOrder.indexOf(posA);
       const indexB = sortOrder.indexOf(posB);
 
-      if (indexA === -1 && indexB === -1) return 0; // Both are 'Unknown' or other
-      if (indexA === -1) return 1; // Put A at the end
-      if (indexB === -1) return -1; // Put B at the end
+      if (indexA === -1 && indexB === -1) return 0;
+      if (indexA === -1) return 1;
+      if (indexB === -1) return -1;
 
       return indexA - indexB;
     });
