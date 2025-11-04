@@ -10,13 +10,15 @@ import { Faq } from "@/components/faq";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TimegrapherReading, CustomerSession, AnalyzedImage, TimegrapherReadingData, Position } from "@/types";
+import { TimegrapherReading, CustomerSession, AnalyzedImage, TimegrapherReadingData, Position, POSITIONS } from "@/types";
 import { List, Trash2, FilePlus, ChevronLeft, Check, X, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 const initialReadings: TimegrapherReading[] = [
     { id: '1', timestamp: '2025-10-30T11:00:00.000Z', position: 'Dial Up', rate: '+5', amplitude: '290', beatError: '0.2', liftAngle: '52' },
@@ -250,7 +252,21 @@ export default function Home() {
                             </div>
                              <div>
                                 <Label htmlFor={`position-${index}`}>Position</Label>
-                                <Input id={`position-${index}`} value={item.data.position} onChange={(e) => handleExtractedDataChange(index, 'position', e.target.value as Position)} />
+                                <Select
+                                  value={item.data.position}
+                                  onValueChange={(value) => handleExtractedDataChange(index, 'position', value as Position)}
+                                >
+                                  <SelectTrigger id={`position-${index}`}>
+                                    <SelectValue placeholder="Select a position" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {POSITIONS.map((pos) => (
+                                      <SelectItem key={pos} value={pos}>
+                                        {pos}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
                             </div>
                         </div>
                       </CardContent>
@@ -289,7 +305,7 @@ export default function Home() {
                                 <Button variant="ghost" size="icon" onClick={() => handleSelectSession(session)}>
                                     <ChevronLeft className="h-4 w-4" />
                                 </Button>
-                                <Button variant="destructive-outline" size="icon" onClick={() => handleDeleteSession(session.id)}>
+                                <Button variant="destructive" size="icon" onClick={() => handleDeleteSession(session.id)}>
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                              </div>
@@ -323,5 +339,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
