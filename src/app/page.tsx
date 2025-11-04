@@ -64,7 +64,22 @@ export default function Home() {
   }, [sessions]);
 
   const handleDataExtracted = (data: AnalyzedImage[]) => {
-    setExtractedData(data);
+    const sortOrder: Position[] = ['Dial Down', 'Crown Up', 'Crown Down', 'Crown Left', 'Crown Right', 'Dial Up'];
+    
+    const sortedData = [...data].sort((a, b) => {
+      const posA = a.data.position;
+      const posB = b.data.position;
+      const indexA = sortOrder.indexOf(posA);
+      const indexB = sortOrder.indexOf(posB);
+
+      if (indexA === -1 && indexB === -1) return 0; // Both are 'Unknown' or other
+      if (indexA === -1) return 1; // Put A at the end
+      if (indexB === -1) return -1; // Put B at the end
+
+      return indexA - indexB;
+    });
+
+    setExtractedData(sortedData);
     setActiveTab("review");
   };
   
@@ -208,7 +223,7 @@ export default function Home() {
                   <TabsContent value="manual">
                     <Card className="rounded-t-none border-t-0">
                       <CardContent className="p-6">
-                        <ManualEntryForm onDataAdded={handleManualDataAdded} customerName={activeCustomerName} refNumber={activeRefNumber}/>
+                        <ManualEntryForm onDataAdded={handleManualDataAdded} />
                       </CardContent>
                     </Card>
                   </TabsContent>

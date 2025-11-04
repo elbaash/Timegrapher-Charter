@@ -26,17 +26,18 @@ import { TimegrapherReadingData, POSITIONS } from "@/types";
 import { PlusCircle } from "lucide-react";
 
 const formSchema = z.object({
-  customerName: z.string().min(1, "Customer name is required."),
-  refNumber: z.string().min(1, "Reference number is required."),
   position: z.enum(POSITIONS),
   rate: z.string().min(1, "Rate is required."),
   amplitude: z.string().min(1, "Amplitude is required."),
   beatError: z.string().min(1, "Beat error is required."),
   liftAngle: z.string().min(1, "Lift angle is required."),
+  // customerName and refNumber are no longer required here
+  customerName: z.string().optional(),
+  refNumber: z.string().optional(),
 });
 
 type ManualEntryFormProps = {
-  onDataAdded: (data: TimegrapherReadingData) => void;
+  onDataAdded: (data: Omit<TimegrapherReadingData, 'customerName' | 'refNumber'> & { customerName?: string, refNumber?: string }) => void;
 };
 
 export function ManualEntryForm({ onDataAdded }: ManualEntryFormProps) {
@@ -44,8 +45,6 @@ export function ManualEntryForm({ onDataAdded }: ManualEntryFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      customerName: "",
-      refNumber: "A",
       position: "Dial Up",
       rate: "",
       amplitude: "",
@@ -60,13 +59,13 @@ export function ManualEntryForm({ onDataAdded }: ManualEntryFormProps) {
       title: "Reading Added",
       description: "The manual entry has been recorded.",
     });
+    // Reset fields for the next entry, but keep customer/ref info if it exists
     form.reset({
       ...form.getValues(),
       position: "Dial Up",
       rate: "",
       amplitude: "",
       beatError: "",
-      liftAngle: "52"
     });
   }
 
@@ -74,34 +73,6 @@ export function ManualEntryForm({ onDataAdded }: ManualEntryFormProps) {
     <div className="flex justify-center">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="w-full max-w-lg space-y-6">
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <FormField
-              control={form.control}
-              name="customerName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Customer Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John Doe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="refNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Ref. Number</FormLabel>
-                  <FormControl>
-                    <Input placeholder="A123" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
            <FormField
               control={form.control}
               name="position"
@@ -185,5 +156,3 @@ export function ManualEntryForm({ onDataAdded }: ManualEntryFormProps) {
     </div>
   );
 }
-
-    
