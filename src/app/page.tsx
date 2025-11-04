@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AppHeader } from "@/components/app-header";
 import { Uploader } from "@/components/uploader";
 import { ReadingsTable } from "@/components/readings-table";
@@ -11,13 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TimegrapherReading, CustomerSession, AnalyzedImage, TimegrapherReadingData, Position } from "@/types";
-import { List, Trash2, FilePlus, ChevronLeft, Check, X } from "lucide-react";
+import { List, Trash2, FilePlus, ChevronLeft, Check, X, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-// Hardcoded initial data to prevent hydration errors
 const initialReadings: TimegrapherReading[] = [
     { id: '1', timestamp: '2025-10-30T11:00:00.000Z', position: 'Dial Up', rate: '+5', amplitude: '290', beatError: '0.2', liftAngle: '52' },
     { id: '2', timestamp: '2025-10-30T11:01:00.000Z', position: 'Dial Down', rate: '+3', amplitude: '285', beatError: '0.1', liftAngle: '52' },
@@ -74,24 +74,14 @@ export default function Home() {
       position: item.data.position || 'Unknown',
     }));
 
-    // If we are editing an existing session, find it and update it.
-    // Otherwise, this is a new session, so just add the readings.
-    if (activeSessionId) {
-      const session = sessions.find(s => s.id === activeSessionId);
-      if (session && session.customerName) {
-        setActiveCustomerName(session.customerName);
+    if (!activeSessionId) {
+      const firstItem = newReadings[0] as any;
+      if (firstItem?.customerName) {
+        setActiveCustomerName(firstItem.customerName);
       }
-       if (session && session.refNumber) {
-        setActiveRefNumber(session.refNumber);
+      if (firstItem?.refNumber) {
+        setActiveRefNumber(firstItem.refNumber);
       }
-    } else {
-        const firstItem = newReadings[0];
-        if (firstItem && (firstItem as any).customerName) {
-             setActiveCustomerName((firstItem as any).customerName);
-        }
-        if (firstItem && (firstItem as any).refNumber) {
-             setActiveRefNumber((firstItem as any).refNumber);
-        }
     }
 
     setActiveReadings(prev => [...prev, ...newReadings]);
@@ -108,15 +98,19 @@ export default function Home() {
     setActiveTab("new");
   };
   
-   const handleExtractedDataChange = (index: number, field: keyof TimegrapherReadingData, value: string) => {
+  const handleExtractedDataChange = (index: number, field: keyof TimegrapherReadingData, value: string) => {
     const updatedData = [...extractedData];
     (updatedData[index].data as any)[field] = value;
     setExtractedData(updatedData);
   };
 
   const handleManualDataAdded = (data: TimegrapherReadingData) => {
-    setActiveCustomerName(data.customerName);
-    setActiveRefNumber(data.refNumber);
+    if(!activeCustomerName && data.customerName) {
+      setActiveCustomerName(data.customerName);
+    }
+    if(!activeRefNumber && data.refNumber) {
+      setActiveRefNumber(data.refNumber);
+    }
     
     const newReading: TimegrapherReading = {
       id: `${Date.now()}`,
@@ -181,7 +175,7 @@ export default function Home() {
       <AppHeader />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 -mb-px">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="new">New</TabsTrigger>
             <TabsTrigger value="review" disabled={extractedData.length === 0}>Review</TabsTrigger>
             <TabsTrigger value="sessions">Sessions</TabsTrigger>
@@ -196,7 +190,7 @@ export default function Home() {
                   {activeSessionId ? `Editing session for ${activeCustomerName} (${activeRefNumber})` : "Start a new session by adding readings."}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+               <CardContent className="space-y-4">
                  <Tabs defaultValue="upload" className="w-full">
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="upload">Upload Photos</TabsTrigger>
@@ -212,7 +206,7 @@ export default function Home() {
                   <TabsContent value="manual">
                     <Card className="rounded-t-none border-t-0">
                       <CardContent className="p-6">
-                        <ManualEntryForm onDataAdded={handleManualDataAdded} />
+                        <ManualEntryForm onDataAdded={handleManualDataAdded} customerName={activeCustomerName} refNumber={activeRefNumber}/>
                       </CardContent>
                     </Card>
                   </TabsContent>
