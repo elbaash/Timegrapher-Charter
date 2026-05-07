@@ -11,24 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TimegrapherReading, CustomerSession, AnalyzedImage, TimegrapherReadingData, Position, POSITIONS } from "@/types";
-import { List, Trash2, FilePlus, ChevronLeft, Check, X } from "lucide-react";
+import { List, Trash2, FilePlus, ChevronRight, Check, X, History, HelpCircle, PlusCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-const initialReadings: TimegrapherReading[] = [
-    { id: '1', timestamp: '2025-10-30T11:00:00.000Z', position: 'Dial Up', rate: '+5', amplitude: '290', beatError: '0.2', liftAngle: '52' },
-    { id: '2', timestamp: '2025-10-30T11:01:00.000Z', position: 'Dial Down', rate: '+3', amplitude: '285', beatError: '0.1', liftAngle: '52' },
-    { id: '3', timestamp: '2025-10-30T11:02:00.000Z', position: 'Crown Down', rate: '-2', amplitude: '260', beatError: '0.4', liftAngle: '52' },
-    { id: '4', timestamp: '2025-10-30T11:03:00.000Z', position: 'Crown Left', rate: '-1', amplitude: '255', beatError: '0.3', liftAngle: '52' },
-    { id: '5', timestamp: '2025-10-30T11:04:00.000Z', position: 'Crown Up', rate: '-5', amplitude: '250', beatError: '0.5', liftAngle: '52' },
-    { id: '6', timestamp: '2025-10-30T11:05:00.000Z', position: 'Crown Right', rate: '0', amplitude: '258', beatError: '0.2', liftAngle: '52' },
-];
-
-const initialCustomerName = "Jane Smith";
-const initialRefNumber = "B456";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("new");
@@ -56,16 +44,9 @@ export default function Home() {
         setActiveCustomerName(customerName || "");
         setActiveRefNumber(refNumber || "");
         setActiveSessionId(sessionId || null);
-      } else {
-        setActiveReadings(initialReadings);
-        setActiveCustomerName(initialCustomerName);
-        setActiveRefNumber(initialRefNumber);
       }
     } catch (error) {
       console.error("Failed to load state from localStorage", error);
-      setActiveReadings(initialReadings);
-      setActiveCustomerName(initialCustomerName);
-      setActiveRefNumber(initialRefNumber);
     }
   }, []);
 
@@ -122,8 +103,8 @@ export default function Home() {
 
     if (!activeSessionId) {
       const firstItem = extractedData[0]?.data;
-      if (firstItem?.customerName) setActiveCustomerName(firstItem.customerName);
-      if (firstItem?.refNumber) setActiveRefNumber(firstItem.refNumber);
+      if (firstItem?.customerName && !activeCustomerName) setActiveCustomerName(firstItem.customerName);
+      if (firstItem?.refNumber && !activeRefNumber) setActiveRefNumber(firstItem.refNumber);
     }
 
     setActiveReadings(prev => [...prev, ...newReadings]);
@@ -166,18 +147,18 @@ export default function Home() {
 
     if (activeSessionId) {
       setSessions(sessions.map(s => s.id === activeSessionId ? { ...s, readings: activeReadings, customerName: activeCustomerName, refNumber: activeRefNumber } : s));
-      toast({ title: "Session Updated", description: `Session for ${activeCustomerName} (${activeRefNumber}) has been updated.` });
+      toast({ title: "Session Updated", description: `Session for ${activeCustomerName || 'Unnamed'} has been updated.` });
     } else {
       const newSession: CustomerSession = {
         id: `sess-${Date.now()}`,
-        customerName: activeCustomerName || "Untitled",
+        customerName: activeCustomerName || "Untitled Session",
         refNumber: activeRefNumber || "N/A",
         createdAt: new Date().toISOString(),
         readings: activeReadings
       };
       setSessions([newSession, ...sessions]);
       setActiveSessionId(newSession.id);
-      toast({ title: "Session Saved", description: `New session for ${activeCustomerName} (${activeRefNumber}) has been created.` });
+      toast({ title: "Session Saved", description: `New session created for ${newSession.customerName}.` });
     }
   };
 
@@ -187,7 +168,7 @@ export default function Home() {
     setActiveRefNumber("");
     setActiveSessionId(null);
     setActiveTab("new");
-    toast({ title: "New Session Started", description: "You are now working on a new, unsaved session." });
+    toast({ title: "New Session", description: "Cleared workspace for a new regulation session." });
   };
 
   const handleSelectSession = (session: CustomerSession) => {
@@ -211,43 +192,65 @@ export default function Home() {
       <AppHeader />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="new">New</TabsTrigger>
-            <TabsTrigger value="review" disabled={extractedData.length === 0}>Review</TabsTrigger>
-            <TabsTrigger value="sessions">Sessions</TabsTrigger>
-            <TabsTrigger value="faq">FAQ</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 bg-background border rounded-lg p-1">
+            <TabsTrigger value="new" className="data-[state=active]:bg-muted"><PlusCircle className="mr-2 h-4 w-4 hidden sm:inline" />New</TabsTrigger>
+            <TabsTrigger value="review" disabled={extractedData.length === 0} className="data-[state=active]:bg-muted">Review</TabsTrigger>
+            <TabsTrigger value="sessions" className="data-[state=active]:bg-muted"><History className="mr-2 h-4 w-4 hidden sm:inline" />Sessions</TabsTrigger>
+            <TabsTrigger value="faq" className="data-[state=active]:bg-muted"><HelpCircle className="mr-2 h-4 w-4 hidden sm:inline" />FAQ</TabsTrigger>
           </TabsList>
           
-          <Card className="rounded-t-none border-t-0">
+          <div className="mt-4">
             <TabsContent value="new">
-              <CardHeader>
-                <CardTitle>New Regulation Session</CardTitle>
-                <CardDescription>
-                  {activeSessionId ? `Editing session for ${activeCustomerName} (${activeRefNumber})` : "Start a new session by adding readings."}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <Tabs defaultValue="upload" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="upload">Upload Photos</TabsTrigger>
-                    <TabsTrigger value="manual">Manual Entry</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="upload">
-                    <Card className="rounded-t-none border-t-0 shadow-none">
-                      <CardContent className="p-6">
-                        <Uploader onDataExtracted={handleDataExtracted} isProcessing={isProcessing} setProcessing={setProcessing} />
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                  <TabsContent value="manual">
-                    <Card className="rounded-t-none border-t-0 shadow-none">
-                      <CardContent className="p-6">
-                        <ManualEntryForm onDataAdded={handleManualDataAdded} />
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                </Tabs>
-                
+              <div className="grid gap-4 md:grid-cols-[1fr_2fr]">
+                <div className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Customer Info</CardTitle>
+                      <CardDescription>Associate these readings with a client.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="main-customer">Customer Name</Label>
+                        <Input 
+                          id="main-customer" 
+                          placeholder="e.g. Rolex Service Center" 
+                          value={activeCustomerName} 
+                          onChange={(e) => setActiveCustomerName(e.target.value)} 
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="main-ref">Reference Number</Label>
+                        <Input 
+                          id="main-ref" 
+                          placeholder="e.g. 116610LN" 
+                          value={activeRefNumber} 
+                          onChange={(e) => setActiveRefNumber(e.target.value)} 
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Data Input</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Tabs defaultValue="upload">
+                        <TabsList className="grid w-full grid-cols-2 mb-4">
+                          <TabsTrigger value="upload">AI OCR</TabsTrigger>
+                          <TabsTrigger value="manual">Manual</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="upload">
+                          <Uploader onDataExtracted={handleDataExtracted} isProcessing={isProcessing} setProcessing={setProcessing} />
+                        </TabsContent>
+                        <TabsContent value="manual">
+                          <ManualEntryForm onDataAdded={handleManualDataAdded} />
+                        </TabsContent>
+                      </Tabs>
+                    </CardContent>
+                  </Card>
+                </div>
+
                 <ReadingsTable 
                   readings={activeReadings} 
                   setReadings={setActiveReadings}
@@ -255,117 +258,127 @@ export default function Home() {
                   refNumber={activeRefNumber}
                   onSave={handleSaveSession}
                 />
-              </CardContent>
+              </div>
             </TabsContent>
 
             <TabsContent value="review">
-               <CardHeader>
-                <CardTitle>Review Extracted Data</CardTitle>
-                <CardDescription>Verify the OCR results and make corrections before adding to the session.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                 <div className="space-y-4">
-                  {extractedData.map((item, index) => (
-                    <Card key={index} className="overflow-hidden">
-                      <CardContent className="p-4 flex flex-col md:flex-row gap-4">
-                        <div className="w-full md:w-1/3 relative aspect-video">
-                           <Image src={item.imageUrl} alt={`Preview ${index + 1}`} fill className="rounded-md object-cover" />
-                        </div>
-                        <div className="w-full md:w-2/3 grid grid-cols-2 gap-4">
-                            <div>
-                                <Label htmlFor={`rate-${index}`}>Rate (s/d)</Label>
-                                <Input id={`rate-${index}`} value={item.data.rate} onChange={(e) => handleExtractedDataChange(index, 'rate', e.target.value)} />
-                            </div>
-                            <div>
-                                <Label htmlFor={`amplitude-${index}`}>Amplitude (°)</Label>
-                                <Input id={`amplitude-${index}`} value={item.data.amplitude} onChange={(e) => handleExtractedDataChange(index, 'amplitude', e.target.value)} />
-                            </div>
-                            <div>
-                                <Label htmlFor={`beatError-${index}`}>Beat Error (ms)</Label>
-                                <Input id={`beatError-${index}`} value={item.data.beatError} onChange={(e) => handleExtractedDataChange(index, 'beatError', e.target.value)} />
-                            </div>
-                             <div>
-                                <Label htmlFor={`position-${index}`}>Position</Label>
-                                <Select
-                                  value={item.data.position}
-                                  onValueChange={(value) => handleExtractedDataChange(index, 'position', value)}
-                                >
-                                  <SelectTrigger id={`position-${index}`}>
-                                    <SelectValue placeholder="Select a position" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {POSITIONS.map((pos) => (
-                                      <SelectItem key={pos} value={pos}>
-                                        {pos}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-                <div className="flex justify-end gap-2 pt-4">
-                    <Button variant="outline" onClick={handleReviewCancel}><X className="mr-2 h-4 w-4"/>Cancel</Button>
-                    <Button onClick={handleReviewSave}><Check className="mr-2 h-4 w-4"/>Save Readings</Button>
-                </div>
-              </CardContent>
+               <Card>
+                <CardHeader>
+                  <CardTitle>Verify OCR Extraction</CardTitle>
+                  <CardDescription>Adjust any values that Gemini may have misread from the timegrapher display.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-4">
+                    {extractedData.map((item, index) => (
+                      <Card key={index} className="bg-muted/30">
+                        <CardContent className="p-4 flex flex-col md:flex-row gap-6">
+                          <div className="w-full md:w-48 relative aspect-video border rounded-md overflow-hidden bg-black flex-shrink-0">
+                             <Image src={item.imageUrl} alt={`Reading ${index + 1}`} fill className="object-contain" />
+                          </div>
+                          <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
+                              <div className="space-y-2">
+                                  <Label className="text-xs text-muted-foreground uppercase">Rate (s/d)</Label>
+                                  <Input className="h-9" value={item.data.rate} onChange={(e) => handleExtractedDataChange(index, 'rate', e.target.value)} />
+                              </div>
+                              <div className="space-y-2">
+                                  <Label className="text-xs text-muted-foreground uppercase">Amplitude (°)</Label>
+                                  <Input className="h-9" value={item.data.amplitude} onChange={(e) => handleExtractedDataChange(index, 'amplitude', e.target.value)} />
+                              </div>
+                              <div className="space-y-2">
+                                  <Label className="text-xs text-muted-foreground uppercase">Beat Error (ms)</Label>
+                                  <Input className="h-9" value={item.data.beatError} onChange={(e) => handleExtractedDataChange(index, 'beatError', e.target.value)} />
+                              </div>
+                               <div className="space-y-2">
+                                  <Label className="text-xs text-muted-foreground uppercase">Position</Label>
+                                  <Select
+                                    value={item.data.position}
+                                    onValueChange={(value) => handleExtractedDataChange(index, 'position', value)}
+                                  >
+                                    <SelectTrigger className="h-9">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {POSITIONS.map((pos) => (
+                                        <SelectItem key={pos} value={pos}>{pos}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                              </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                  <div className="flex justify-end gap-3 pt-6 border-t">
+                      <Button variant="ghost" onClick={handleReviewCancel}><X className="mr-2 h-4 w-4"/>Discard</Button>
+                      <Button onClick={handleReviewSave} className="px-8"><Check className="mr-2 h-4 w-4"/>Confirm All Readings</Button>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="sessions">
-               <CardHeader>
-                <CardTitle>Saved Sessions</CardTitle>
-                <CardDescription>Manage your previous regulation sessions.</CardDescription>
-                 <div className="pt-2">
-                    <Button onClick={handleNewSession}><FilePlus className="mr-2 h-4 w-4" /> Start New Session</Button>
-                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="border rounded-lg overflow-hidden">
-                    {sessions.length > 0 ? (
-                      <ul className="divide-y">
-                        {sessions.map(session => (
-                          <li key={session.id} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                            <button onClick={() => handleSelectSession(session)} className="flex-grow text-left">
-                              <p className="font-semibold">{session.customerName} <span className="text-sm font-normal text-muted-foreground">({session.refNumber})</span></p>
-                              <p className="text-sm text-muted-foreground">
-                                {session.readings.length} readings • {new Date(session.createdAt).toLocaleDateString()}
-                              </p>
-                            </button>
-                             <div className="flex items-center gap-2">
-                                <Button variant="ghost" size="icon" onClick={() => handleSelectSession(session)}>
-                                    <ChevronLeft className="h-4 w-4" />
-                                </Button>
-                                <Button variant="destructive" size="icon" onClick={() => handleDeleteSession(session.id)}>
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                             </div>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                       <div className="flex flex-col items-center justify-center gap-4 py-16">
-                        <List className="h-16 w-16 text-muted-foreground/50" />
-                        <h3 className="text-xl font-semibold tracking-tight">No Saved Sessions</h3>
-                        <p className="text-muted-foreground">Save your first session to see it here.</p>
-                      </div>
-                    )}
-                </div>
-              </CardContent>
+               <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                  <div>
+                    <CardTitle>Session Archives</CardTitle>
+                    <CardDescription>A history of all completed watch regulations.</CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={handleNewSession}><FilePlus className="mr-2 h-4 w-4" /> New Session</Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border bg-background">
+                      {sessions.length > 0 ? (
+                        <div className="divide-y">
+                          {sessions.map(session => (
+                            <div key={session.id} className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors group">
+                              <div className="flex-grow">
+                                <h4 className="font-semibold text-primary">{session.customerName}</h4>
+                                <div className="flex gap-3 text-sm text-muted-foreground mt-1">
+                                  <span>Ref: <span className="font-medium text-foreground">{session.refNumber}</span></span>
+                                  <span>•</span>
+                                  <span>{session.readings.length} readings</span>
+                                  <span>•</span>
+                                  <span>{new Date(session.createdAt).toLocaleDateString()}</span>
+                                </div>
+                              </div>
+                               <div className="flex items-center gap-2">
+                                  <Button variant="ghost" size="sm" onClick={() => handleSelectSession(session)} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                      Open <ChevronRight className="ml-1 h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteSession(session.id)}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                               </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                         <div className="flex flex-col items-center justify-center gap-3 py-20">
+                          <div className="p-4 rounded-full bg-muted">
+                            <History className="h-8 w-8 text-muted-foreground/60" />
+                          </div>
+                          <h3 className="text-lg font-medium">No Archives Found</h3>
+                          <p className="text-sm text-muted-foreground text-center max-w-[250px]">Your saved regulation reports will appear here for future reference.</p>
+                        </div>
+                      )}
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="faq">
-               <CardHeader>
-                <CardTitle>Frequently Asked Questions</CardTitle>
-                <CardDescription>Common questions about the Weishi Timegrapher No. 1000.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Faq />
-              </CardContent>
+               <Card>
+                <CardHeader>
+                  <CardTitle>Operator Knowledge Base</CardTitle>
+                  <CardDescription>Technical documentation for the Weishi Timegrapher No. 1000.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Faq />
+                </CardContent>
+              </Card>
             </TabsContent>
-          </Card>
+          </div>
         </Tabs>
       </main>
     </div>

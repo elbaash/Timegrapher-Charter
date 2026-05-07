@@ -37,22 +37,22 @@ export function ReadingsTable({ readings, setReadings, customerName, refNumber, 
   const handleClearAll = () => {
     setReadings([]);
     toast({
-      title: "Readings Cleared",
-      description: "All entries have been removed from the current session.",
+      title: "Workspace Cleared",
+      description: "Removed all readings from the active session.",
     });
   };
 
   const formatReadingsAsText = () => {
     if (readings.length === 0) return "No readings to share.";
 
-    let text = `ChronoGrapher Readings for ${customerName} (${refNumber}):\n\n`;
+    let text = `ChronoGrapher Report\n`;
+    text += `Customer: ${customerName || 'N/A'}\n`;
+    text += `Reference: ${refNumber || 'N/A'}\n`;
+    text += `Date: ${format(new Date(), 'PP')}\n\n`;
+    
     readings.forEach((reading) => {
-      text += `${format(new Date(reading.timestamp), 'Pp')}\n`;
-      text += `   - Position: ${reading.position}\n`;
-      text += `   - Rate: ${reading.rate} s/d\n`;
-      text += `   - Amplitude: ${reading.amplitude}°\n`;
-      text += `   - Beat Error: ${reading.beatError} ms\n`;
-      text += `   - Lift Angle: ${reading.liftAngle}°\n\n`;
+      text += `[${reading.position}]\n`;
+      text += `Rate: ${reading.rate} s/d | Amp: ${reading.amplitude}° | BE: ${reading.beatError} ms\n\n`;
     });
     return text;
   };
@@ -62,31 +62,20 @@ export function ReadingsTable({ readings, setReadings, customerName, refNumber, 
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "ChronoGrapher Readings",
+          title: `ChronoGrapher Report - ${customerName || 'Watch'}`,
           text: shareText,
         });
       } catch (error: any) {
         if (error.name !== 'AbortError') {
-          toast({
-            variant: "destructive",
-            title: "Sharing failed",
-            description: "Could not share the readings.",
-          });
+          toast({ variant: "destructive", title: "Share Error", description: "Could not open share menu." });
         }
       }
     } else {
       try {
         await navigator.clipboard.writeText(shareText);
-        toast({
-          title: "Copied to clipboard",
-          description: "Readings have been copied to your clipboard.",
-        });
+        toast({ title: "Copied", description: "Report text copied to clipboard." });
       } catch (error) {
-         toast({
-          variant: "destructive",
-          title: "Copy failed",
-          description: "Could not copy readings to clipboard.",
-        });
+         toast({ variant: "destructive", title: "Copy Error", description: "Could not copy to clipboard." });
       }
     }
   };
@@ -95,143 +84,126 @@ export function ReadingsTable({ readings, setReadings, customerName, refNumber, 
     window.print();
   };
   
-  const printHeader = (
-    <div className="print-only hidden">
-        <div className="pt-8">
-            <h1 className="text-2xl font-bold text-center mb-2 font-headline">ChronoGrapher Readings</h1>
-            <div className="text-center text-sm text-muted-foreground mb-6">
-              <p>{format(new Date(), 'PP')}</p>
-              <p>Customer: <span className="font-semibold">{customerName}</span> | Ref #: <span className="font-semibold">{refNumber}</span></p>
-            </div>
-        </div>
-    </div>
-  );
-
   return (
     <>
-      <div className="print-container hidden print:block">
-        {printHeader}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[180px]">Timestamp</TableHead>
-              <TableHead>Position</TableHead>
-              <TableHead>Rate (s/d)</TableHead>
-              <TableHead>Amplitude (°)</TableHead>
-              <TableHead>Beat Error (ms)</TableHead>
-              <TableHead>Lift Angle (°)</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {readings.map((reading) => (
-              <TableRow key={reading.id}>
-                <TableCell>{format(new Date(reading.timestamp), "Pp")}</TableCell>
-                <TableCell>{reading.position}</TableCell>
-                <TableCell className="font-medium">{reading.rate}</TableCell>
-                <TableCell>{reading.amplitude}</TableCell>
-                <TableCell>{reading.beatError}</TableCell>
-                <TableCell>{reading.liftAngle}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      {/* Hidden Print Only Section */}
+      <div className="hidden print:block print:p-8">
+          <div className="text-center mb-10">
+              <h1 className="text-3xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 inline-block">Regulation Certificate</h1>
+              <div className="mt-4 grid grid-cols-2 text-sm text-left gap-4">
+                <div>
+                  <p className="font-bold">CUSTOMER:</p>
+                  <p>{customerName || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="font-bold">REFERENCE:</p>
+                  <p>{refNumber || 'N/A'}</p>
+                </div>
+                 <div>
+                  <p className="font-bold">DATE:</p>
+                  <p>{format(new Date(), 'PPPP')}</p>
+                </div>
+              </div>
+          </div>
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b-2 border-black bg-muted">
+                <th className="py-2 text-left text-xs uppercase">Position</th>
+                <th className="py-2 text-right text-xs uppercase">Rate (s/d)</th>
+                <th className="py-2 text-right text-xs uppercase">Amplitude (°)</th>
+                <th className="py-2 text-right text-xs uppercase">Beat Error (ms)</th>
+                <th className="py-2 text-right text-xs uppercase">Lift (°)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {readings.map((r) => (
+                <tr key={r.id} className="border-b border-gray-200">
+                  <td className="py-3 font-semibold">{r.position}</td>
+                  <td className="py-3 text-right">{r.rate}</td>
+                  <td className="py-3 text-right">{r.amplitude}</td>
+                  <td className="py-3 text-right">{r.beatError}</td>
+                  <td className="py-3 text-right">{r.liftAngle}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="mt-20 border-t pt-4 grid grid-cols-2 text-xs">
+            <p>CHRONOGRAPHER PROFESSIONAL SYSTEM</p>
+            <p className="text-right italic">CERTIFIED WATCHMAKER SIGNATURE: ____________________</p>
+          </div>
       </div>
 
-      <Card className="flex flex-col flex-grow no-print">
-        <CardHeader>
-          <CardTitle className="font-headline">Current Session</CardTitle>
-          <CardDescription>
-            Readings for <span className="font-bold">{customerName || "New Customer"} ({refNumber || "N/A"})</span>. Add or upload data to this session.
-          </CardDescription>
+      <Card className="flex flex-col h-full no-print bg-card shadow-sm border-muted">
+        <CardHeader className="pb-2">
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle className="text-xl font-headline flex items-center gap-2">
+                <Activity className="h-5 w-5 text-primary" /> Active Session
+              </CardTitle>
+              <CardDescription>
+                {customerName ? `${customerName} (${refNumber || 'N/A'})` : "Configure customer info to start."}
+              </CardDescription>
+            </div>
+            {readings.length > 0 && (
+              <div className="flex gap-2">
+                 <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={handleClearAll} title="Clear Session">
+                   <Trash2 className="h-4 w-4" />
+                 </Button>
+              </div>
+            )}
+          </div>
         </CardHeader>
-        <CardContent className="p-0 flex-grow">
-          <div className="relative w-full overflow-auto">
+        <CardContent className="flex-grow p-0">
+          <div className="border-y overflow-auto max-h-[500px]">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-muted/30">
                 <TableRow>
-                  <TableHead className="w-[180px]">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" /> Timestamp
-                    </div>
-                  </TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" /> Position
-                    </div>
-                  </TableHead>
-                  <TableHead>
-                     <div className="flex items-center gap-2">
-                      <Gauge className="h-4 w-4" /> Rate (s/d)
-                    </div>
-                  </TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-2">
-                      <Activity className="h-4 w-4" /> Amplitude (°)
-                    </div>
-                  </TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-2">
-                      <HeartPulse className="h-4 w-4" /> Beat Error (ms)
-                    </div>
-                  </TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-4 w-4" /> Lift Angle (°)
-                    </div>
-                  </TableHead>
+                  <TableHead className="w-[120px] text-xs">Position</TableHead>
+                  <TableHead className="text-xs">Rate</TableHead>
+                  <TableHead className="text-xs">Amp</TableHead>
+                  <TableHead className="text-xs">B.Err</TableHead>
+                  <TableHead className="text-xs hidden md:table-cell">Lift</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {readings.length > 0 ? (
                   readings.map((reading) => (
-                    <TableRow key={reading.id}>
-                      <TableCell>{format(new Date(reading.timestamp), "Pp")}</TableCell>
-                      <TableCell>{reading.position}</TableCell>
-                      <TableCell className="font-medium">{reading.rate}</TableCell>
-                      <TableCell>{reading.amplitude}</TableCell>
-                      <TableCell>{reading.beatError}</TableCell>
-                      <TableCell>{reading.liftAngle}</TableCell>
+                    <TableRow key={reading.id} className="hover:bg-accent/10">
+                      <TableCell className="font-semibold text-xs py-3">{reading.position}</TableCell>
+                      <TableCell className="font-mono text-xs">{reading.rate}s/d</TableCell>
+                      <TableCell className="font-mono text-xs">{reading.amplitude}°</TableCell>
+                      <TableCell className="font-mono text-xs">{reading.beatError}ms</TableCell>
+                      <TableCell className="font-mono text-xs hidden md:table-cell text-muted-foreground">{reading.liftAngle}°</TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
-                      No readings yet.
+                    <TableCell colSpan={5} className="h-64">
+                      <div className="flex flex-col items-center justify-center gap-4 text-center opacity-60">
+                        <div className="p-4 rounded-full bg-muted">
+                          <ListX className="h-10 w-10" />
+                        </div>
+                        <p className="text-sm font-medium">Ready for input</p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
           </div>
-           {readings.length === 0 && (
-            <div className="flex flex-col items-center justify-center gap-4 py-16 h-full">
-              <ListX className="h-16 w-16 text-muted-foreground/50" />
-              <h3 className="text-xl font-semibold tracking-tight font-headline">No Readings Yet</h3>
-              <p className="text-muted-foreground">Upload an image or enter data manually to start.</p>
-            </div>
-          )}
         </CardContent>
-        <CardFooter className="justify-end gap-2 mt-auto no-print">
-          <Button variant="destructive" onClick={handleClearAll} disabled={readings.length === 0}>
-            <Trash2 className="mr-2 h-4 w-4" />
-            Clear Current
+        <CardFooter className="pt-4 gap-2 no-print flex-wrap">
+          <Button variant="outline" className="flex-1" onClick={handleShare} disabled={readings.length === 0}>
+            <Share2 className="mr-2 h-4 w-4" /> Share
           </Button>
-           <Button variant="secondary" onClick={onSave}>
-            <Save className="mr-2 h-4 w-4" />
-            Save Session
+          <Button variant="outline" className="flex-1" onClick={handlePrint} disabled={readings.length === 0}>
+            <Printer className="mr-2 h-4 w-4" /> Print
           </Button>
-          <Button variant="outline" onClick={handleShare} disabled={readings.length === 0}>
-            <Share2 className="mr-2 h-4 w-4" />
-            Share
-          </Button>
-          <Button onClick={handlePrint} disabled={readings.length === 0}>
-            <Printer className="mr-2 h-4 w-4" />
-            Print
+          <Button className="w-full sm:w-auto px-8" onClick={onSave} disabled={readings.length === 0}>
+            <Save className="mr-2 h-4 w-4" /> Archive Session
           </Button>
         </CardFooter>
       </Card>
     </>
   );
 }
-
-    
