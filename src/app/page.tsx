@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -27,6 +26,7 @@ export default function Home() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isProcessing, setProcessing] = useState(false);
   const [extractedData, setExtractedData] = useState<AnalyzedImage[]>([]);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   const { toast } = useToast();
 
@@ -47,18 +47,22 @@ export default function Home() {
       }
     } catch (error) {
       console.error("Failed to load state from localStorage", error);
+    } finally {
+      setIsHydrated(true);
     }
   }, []);
 
   useEffect(() => {
+    if (!isHydrated) return;
     try {
       localStorage.setItem("chronoSessions", JSON.stringify(sessions));
     } catch (error) {
       console.error("Failed to save sessions to localStorage", error);
     }
-  }, [sessions]);
+  }, [sessions, isHydrated]);
   
   useEffect(() => {
+    if (!isHydrated) return;
     try {
       const currentSession = {
         readings: activeReadings,
@@ -70,7 +74,7 @@ export default function Home() {
     } catch (error) {
       console.error("Failed to save current session to localStorage", error);
     }
-  }, [activeReadings, activeCustomerName, activeRefNumber, activeSessionId]);
+  }, [activeReadings, activeCustomerName, activeRefNumber, activeSessionId, isHydrated]);
 
 
   const handleDataExtracted = (data: AnalyzedImage[]) => {
@@ -186,6 +190,8 @@ export default function Home() {
     }
     toast({ variant: "destructive", title: "Session Deleted", description: "The session has been permanently removed." });
   };
+
+  if (!isHydrated) return null;
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
