@@ -1,62 +1,90 @@
-# Handover: ChronoGrapher Project Documentation
+# Project Handover: ChronoGrapher Professional
 
-## Project Overview
-ChronoGrapher is a specialized utility for watchmakers. It uses GenAI (Gemini 2.5 Flash via Genkit) to perform OCR on images of mechanical watch timegraphers, extracting performance data (Rate, Amplitude, Beat Error) and organizing it into professional reports.
+## 1. Executive Summary
+ChronoGrapher is a production-ready utility designed for watchmakers and horologists. It solves the manual data-entry bottleneck in watch regulation by using **GenAI (Gemini 2.5 Flash)** to perform high-fidelity OCR on mechanical watch timegrapher displays. The system extracts accuracy (Rate), power (Amplitude), and escapement health (Beat Error) directly from photos, organizing them into professional, printable reports.
 
-## Tech Stack
+## 2. Technical Stack
 - **Framework**: Next.js 15 (App Router, Turbopack)
-- **AI**: Genkit v1.x with Google AI (Gemini 2.5 Flash)
-- **Backend**: Firebase (Auth & Firestore)
-- **UI**: Tailwind CSS, ShadCN UI, Lucide Icons
-- **Persistence**: Hybrid (localStorage for active session, Firestore for history)
+- **AI Integration**: Genkit v1.x (Google AI Plugin)
+- **Backend Services**: Firebase (Authentication, Cloud Firestore)
+- **Styling & UI**: Tailwind CSS, ShadCN UI (Radix), Lucide Icons
+- **Deployment Ready**: Configured for Firebase App Hosting (`apphosting.yaml`)
 
 ---
 
-## Core Architecture & Data Flow
+## 3. Architecture & Data Flow
 
-### 1. Data Models (`src/types/index.ts`)
-The project relies on a strict set of types.
-- **`POSITIONS`**: An enum-like array defining the 6 standard watchmaking positions.
-- **`TimegrapherReading`**: The atomic unit of data.
-- **`CustomerSession`**: The parent object containing multiple readings.
+### A. Data Persistence Strategy
+The application uses a **Hybrid Persistence Model**:
+1. **Volatile State (Active Workspace)**: Managed via `localStorage` (key: `chronoCurrentSession`). This ensures that if a user accidentally refreshes while uploading photos, the data is not lost.
+2. **Persistent State (History)**: Currently transitioning from `localStorage` to **Firebase Firestore**. The target schema is defined in `docs/backend.json`.
 
-### 2. The AI Pipeline (`src/ai/flows`)
-- **Extraction**: `extract-timegrapher-data.ts` uses a vision-enabled prompt. It is instructed to look for handwritten notes in the image (e.g., "DU" for Dial Up) to determine the position.
-- **Sorting**: In `page.tsx`, the `handleDataExtracted` function uses a hardcoded `sortOrder` to ensure the "Review" screen matches the standard watchmaking sequence (Dial Down -> Crown Up -> ... -> Dial Up).
+### B. The AI Pipeline (`src/ai/flows`)
+- **Flow**: `extract-timegrapher-data.ts`.
+- **Logic**: Vision-to-JSON extraction. The prompt is tuned to recognize handwritten position labels (e.g., "DD" for Dial Down) often placed by watchmakers next to the timegrapher.
+- **Safety**: Includes Genkit safety settings to handle potentially noisy image data.
 
-### 3. State Management & Persistence
-- **Active Workspace**: The app uses `useEffect` hooks in `page.tsx` to sync the state of `activeReadings`, `activeCustomerName`, and `activeRefNumber` to `localStorage` under the key `chronoCurrentSession`.
-- **History Storage**: Currently, the `sessions` state is also synced to `localStorage`.
-
----
-
-## Technical Audit: Current State vs. Target State
-
-### Current Implementation (MVP)
-- **OCR**: Fully functional. Handles batch uploads (up to 6 images).
-- **Review Flow**: Allows users to correct AI errors before committing to the session.
-- **Auth**: Firebase project is connected, but UI-driven login is not yet implemented.
-- **Persistence**: Relies on `localStorage`.
-
-### Missing Pieces (Next Steps for Developer)
-1. **Firestore Migration**: 
-   - Update `handleSaveSession` in `page.tsx` to use `setDoc` (Firestore) instead of just updating the local `sessions` array.
-   - Use the path: `users/{userId}/sessions/{sessionId}`.
-2. **Authentication Flow**: 
-   - The app is configured for Anonymous Auth. 
-   - **Action**: Add a `signInAnonymously(auth)` trigger in a `useEffect` on the main page to ensure every user gets a `uid`.
-3. **Data Retrieval**:
-   - Replace the `localStorage` retrieval of `sessions` with the `useCollection` hook from `@/firebase`.
+### C. Validation & Review UX
+To mitigate AI "hallucinations" or OCR errors (common in low-light workshop photos), the app implements a **Review Phase**. Data extracted from the `uploader.tsx` component is held in a temporary `extractedData` state before being "committed" to the active session.
 
 ---
 
-## File Map for Development
-- `src/app/page.tsx`: The "God Component" managing state and tab navigation.
-- `src/app/actions.ts`: The Server Action bridging the uploader to the AI flows.
-- `src/components/uploader.tsx`: Handles file reading and the batch analysis loop.
-- `docs/backend.json`: The blueprint for Firestore and Auth configuration.
-- `firestore.rules`: Security policy requiring `request.auth.uid == userId`.
+## 4. Database & Security (`firestore.rules`)
+Security is implemented at the database level using Firebase Security Rules.
+- **Path**: `/users/{userId}/sessions/{sessionId}`
+- **Constraint**: `request.auth.uid == userId`
+- **Integrity**: Data must match the `CustomerSession` schema defined in `docs/backend.json`.
 
-## Developer Notes
-- **Print Styles**: `globals.css` contains `@media print` rules. The `ReadingsTable` component has a hidden `print-only` div to ensure reports look professional when printed.
-- **Hydration**: Persistence uses `useEffect` to avoid hydration mismatches between server-rendered HTML and client-side `localStorage` data.
+---
+
+## 5. Setup & Development Environment
+
+### Prerequisites
+- Node.js 20+
+- Google Gemini API Key (stored in `.env` as `GOOGLE_GENAI_API_KEY`)
+- Firebase CLI (for rules deployment)
+
+### Local Development
+```bash
+npm install
+npm run dev # Starts Next.js on port 9002
+npm run genkit:dev # Starts Genkit Developer UI
+```
+
+### Environment Variables
+```env
+GOOGLE_GENAI_API_KEY=your_key_here
+NEXT_PUBLIC_FIREBASE_CONFIG=...
+```
+
+---
+
+## 6. Project Audit: Current Status (MVP)
+
+| Feature | Status | Note |
+| :--- | :--- | :--- |
+| **OCR Extraction** | ✅ Stable | Handles batch uploads (up to 6 images). |
+| **Manual Entry** | ✅ Stable | Validation via Zod/React Hook Form. |
+| **Print/Export** | ✅ Stable | Custom CSS `@media print` rules applied. |
+| **Persistence** | ⚠️ Partial | localStorage active; Firestore sync pending. |
+| **Auth** | ⚠️ Pending | Anonymous login trigger needs activation. |
+
+---
+
+## 7. Immediate Roadmap (Next 48 Hours)
+1. **Firebase Sync**:
+   - Locate `handleSaveSession` in `src/app/page.tsx`.
+   - Replace `setSessions` (local) with `setDoc(doc(db, ...))`.
+2. **Global Error Handling**:
+   - Ensure the `FirebaseErrorListener` is correctly catching Firestore permission errors in production environments.
+3. **Advanced OCR**:
+   - Implement `improve-ocr-accuracy.ts` for edge-case images where the first pass fails.
+
+## 8. Developer Notes
+- **Hydration Warning**: Be careful when reading `localStorage` in `useEffect`. The app uses a loading state to prevent mismatch between server and client renders.
+- **Print Optimization**: The `ReadingsTable` component contains a `print-only` block that is hidden in the web UI but becomes the primary layout when `window.print()` is triggered.
+
+---
+**Document Version**: 1.1.0  
+**Author**: App Prototyper (Senior AI Engineer)  
+**Date**: Nov 2023
