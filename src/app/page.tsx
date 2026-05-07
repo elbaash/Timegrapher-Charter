@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { AppHeader } from "@/components/app-header";
 import { Uploader } from "@/components/uploader";
 import { ReadingsTable } from "@/components/readings-table";
@@ -11,14 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TimegrapherReading, CustomerSession, AnalyzedImage, TimegrapherReadingData, Position, POSITIONS } from "@/types";
-import { List, Trash2, FilePlus, ChevronLeft, Check, X, AlertCircle } from "lucide-react";
+import { List, Trash2, FilePlus, ChevronLeft, Check, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
 
 const initialReadings: TimegrapherReading[] = [
     { id: '1', timestamp: '2025-10-30T11:00:00.000Z', position: 'Dial Up', rate: '+5', amplitude: '290', beatError: '0.2', liftAngle: '52' },
@@ -54,22 +52,20 @@ export default function Home() {
       const storedCurrentSession = localStorage.getItem("chronoCurrentSession");
       if (storedCurrentSession) {
         const { readings, customerName, refNumber, sessionId } = JSON.parse(storedCurrentSession);
-        setActiveReadings(readings);
-        setActiveCustomerName(customerName);
-        setActiveRefNumber(refNumber);
-        setActiveSessionId(sessionId);
+        setActiveReadings(readings || []);
+        setActiveCustomerName(customerName || "");
+        setActiveRefNumber(refNumber || "");
+        setActiveSessionId(sessionId || null);
       } else {
-        // If no saved session, load initial example data
         setActiveReadings(initialReadings);
         setActiveCustomerName(initialCustomerName);
         setActiveRefNumber(initialRefNumber);
       }
     } catch (error) {
       console.error("Failed to load state from localStorage", error);
-        // Fallback to initial data if localStorage fails
-        setActiveReadings(initialReadings);
-        setActiveCustomerName(initialCustomerName);
-        setActiveRefNumber(initialRefNumber);
+      setActiveReadings(initialReadings);
+      setActiveCustomerName(initialCustomerName);
+      setActiveRefNumber(initialRefNumber);
     }
   }, []);
 
@@ -125,13 +121,9 @@ export default function Home() {
     }));
 
     if (!activeSessionId) {
-      const firstItem = newReadings[0] as any;
-      if (firstItem?.customerName) {
-        setActiveCustomerName(firstItem.customerName);
-      }
-      if (firstItem?.refNumber) {
-        setActiveRefNumber(firstItem.refNumber);
-      }
+      const firstItem = extractedData[0]?.data;
+      if (firstItem?.customerName) setActiveCustomerName(firstItem.customerName);
+      if (firstItem?.refNumber) setActiveRefNumber(firstItem.refNumber);
     }
 
     setActiveReadings(prev => [...prev, ...newReadings]);
@@ -155,12 +147,8 @@ export default function Home() {
   };
 
   const handleManualDataAdded = (data: TimegrapherReadingData) => {
-    if(!activeCustomerName && data.customerName) {
-      setActiveCustomerName(data.customerName);
-    }
-    if(!activeRefNumber && data.refNumber) {
-      setActiveRefNumber(data.refNumber);
-    }
+    if(!activeCustomerName && data.customerName) setActiveCustomerName(data.customerName);
+    if(!activeRefNumber && data.refNumber) setActiveRefNumber(data.refNumber);
     
     const newReading: TimegrapherReading = {
       id: `${Date.now()}`,
@@ -177,11 +165,9 @@ export default function Home() {
     }
 
     if (activeSessionId) {
-      // Update existing session
       setSessions(sessions.map(s => s.id === activeSessionId ? { ...s, readings: activeReadings, customerName: activeCustomerName, refNumber: activeRefNumber } : s));
       toast({ title: "Session Updated", description: `Session for ${activeCustomerName} (${activeRefNumber}) has been updated.` });
     } else {
-      // Create new session
       const newSession: CustomerSession = {
         id: `sess-${Date.now()}`,
         customerName: activeCustomerName || "Untitled",
@@ -190,7 +176,7 @@ export default function Home() {
         readings: activeReadings
       };
       setSessions([newSession, ...sessions]);
-      setActiveSessionId(newSession.id); // Set the new session as active
+      setActiveSessionId(newSession.id);
       toast({ title: "Session Saved", description: `New session for ${activeCustomerName} (${activeRefNumber}) has been created.` });
     }
   };
@@ -232,7 +218,7 @@ export default function Home() {
             <TabsTrigger value="faq">FAQ</TabsTrigger>
           </TabsList>
           
-          <Card className="rounded-t-none">
+          <Card className="rounded-t-none border-t-0">
             <TabsContent value="new">
               <CardHeader>
                 <CardTitle>New Regulation Session</CardTitle>
@@ -240,21 +226,21 @@ export default function Home() {
                   {activeSessionId ? `Editing session for ${activeCustomerName} (${activeRefNumber})` : "Start a new session by adding readings."}
                 </CardDescription>
               </CardHeader>
-               <CardContent className="space-y-4">
-                 <Tabs defaultValue="upload" className="w-full">
+              <CardContent className="space-y-6">
+                <Tabs defaultValue="upload" className="w-full">
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="upload">Upload Photos</TabsTrigger>
                     <TabsTrigger value="manual">Manual Entry</TabsTrigger>
                   </TabsList>
                   <TabsContent value="upload">
-                     <Card className="rounded-t-none border-t-0">
+                    <Card className="rounded-t-none border-t-0 shadow-none">
                       <CardContent className="p-6">
                         <Uploader onDataExtracted={handleDataExtracted} isProcessing={isProcessing} setProcessing={setProcessing} />
                       </CardContent>
                     </Card>
                   </TabsContent>
                   <TabsContent value="manual">
-                    <Card className="rounded-t-none border-t-0">
+                    <Card className="rounded-t-none border-t-0 shadow-none">
                       <CardContent className="p-6">
                         <ManualEntryForm onDataAdded={handleManualDataAdded} />
                       </CardContent>
@@ -280,10 +266,10 @@ export default function Home() {
               <CardContent className="space-y-4">
                  <div className="space-y-4">
                   {extractedData.map((item, index) => (
-                    <Card key={index}>
+                    <Card key={index} className="overflow-hidden">
                       <CardContent className="p-4 flex flex-col md:flex-row gap-4">
-                        <div className="w-full md:w-1/3">
-                           <Image src={item.imageUrl} alt={`Preview ${index + 1}`} width={300} height={200} className="rounded-md object-cover" />
+                        <div className="w-full md:w-1/3 relative aspect-video">
+                           <Image src={item.imageUrl} alt={`Preview ${index + 1}`} fill className="rounded-md object-cover" />
                         </div>
                         <div className="w-full md:w-2/3 grid grid-cols-2 gap-4">
                             <div>
@@ -302,7 +288,7 @@ export default function Home() {
                                 <Label htmlFor={`position-${index}`}>Position</Label>
                                 <Select
                                   value={item.data.position}
-                                  onValueChange={(value) => handleExtractedDataChange(index, 'position', value as Position)}
+                                  onValueChange={(value) => handleExtractedDataChange(index, 'position', value)}
                                 >
                                   <SelectTrigger id={`position-${index}`}>
                                     <SelectValue placeholder="Select a position" />
@@ -321,9 +307,9 @@ export default function Home() {
                     </Card>
                   ))}
                 </div>
-                <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={handleReviewCancel}><X className="mr-2"/>Cancel</Button>
-                    <Button onClick={handleReviewSave}><Check className="mr-2"/>Save Readings</Button>
+                <div className="flex justify-end gap-2 pt-4">
+                    <Button variant="outline" onClick={handleReviewCancel}><X className="mr-2 h-4 w-4"/>Cancel</Button>
+                    <Button onClick={handleReviewSave}><Check className="mr-2 h-4 w-4"/>Save Readings</Button>
                 </div>
               </CardContent>
             </TabsContent>
@@ -331,22 +317,21 @@ export default function Home() {
             <TabsContent value="sessions">
                <CardHeader>
                 <CardTitle>Saved Sessions</CardTitle>
-                <CardDescription>Select a previous session to view or manage it. Or start a new one.</CardDescription>
+                <CardDescription>Manage your previous regulation sessions.</CardDescription>
                  <div className="pt-2">
-                    <Button onClick={handleNewSession}><FilePlus className="mr-2" /> Start New Session</Button>
+                    <Button onClick={handleNewSession}><FilePlus className="mr-2 h-4 w-4" /> Start New Session</Button>
                  </div>
               </CardHeader>
               <CardContent>
-                <div className="border rounded-lg">
-                  <div className="relative w-full overflow-auto">
+                <div className="border rounded-lg overflow-hidden">
                     {sessions.length > 0 ? (
                       <ul className="divide-y">
                         {sessions.map(session => (
-                          <li key={session.id} className="flex items-center justify-between p-4 hover:bg-muted/50">
+                          <li key={session.id} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
                             <button onClick={() => handleSelectSession(session)} className="flex-grow text-left">
                               <p className="font-semibold">{session.customerName} <span className="text-sm font-normal text-muted-foreground">({session.refNumber})</span></p>
                               <p className="text-sm text-muted-foreground">
-                                {session.readings.length} readings, created on {new Date(session.createdAt).toLocaleDateString()}
+                                {session.readings.length} readings • {new Date(session.createdAt).toLocaleDateString()}
                               </p>
                             </button>
                              <div className="flex items-center gap-2">
@@ -367,7 +352,6 @@ export default function Home() {
                         <p className="text-muted-foreground">Save your first session to see it here.</p>
                       </div>
                     )}
-                  </div>
                 </div>
               </CardContent>
             </TabsContent>

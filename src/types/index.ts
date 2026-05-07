@@ -20,10 +20,10 @@ export type TimegrapherData = {
   liftAngle: string;
 }
 
-// Data used for manual entry forms, includes customer info
+// Data used for manual entry forms, allows optional fields during input
 export type TimegrapherReadingData = {
-  customerName: string;
-  refNumber: string;
+  customerName?: string;
+  refNumber?: string;
 } & TimegrapherData;
 
 
@@ -34,7 +34,7 @@ export type TimegrapherReading = {
 
 export type AnalyzedImage = {
   imageUrl: string;
-  data: TimegrapherReadingData; // This includes customer/ref for initial assignment
+  data: TimegrapherReadingData;
 };
 
 export type CustomerSession = {
@@ -44,5 +44,3 @@ export type CustomerSession = {
   createdAt: string | Date;
   readings: TimegrapherReading[];
 }
-
-    
