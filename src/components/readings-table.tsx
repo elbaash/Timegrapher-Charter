@@ -200,7 +200,7 @@ export function ReadingsTable({ readings, setReadings, customerName, refNumber, 
             <Printer className="mr-2 h-4 w-4" /> Print
           </Button>
           <Button className="w-full sm:w-auto px-8" onClick={onSave} disabled={readings.length === 0}>
-            <Save className="mr-2 h-4 w-4" /> Archive Session
+            <Save className="mr-2 h-4 w-4" /> Save to Watch
           </Button>
         </CardFooter>
       </Card>

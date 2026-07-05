@@ -4,46 +4,46 @@ import { useState, useEffect } from "react";
 import { AppHeader } from "@/components/app-header";
 import { Uploader } from "@/components/uploader";
 import { ReadingsTable } from "@/components/readings-table";
+import { ReadingsView } from "@/components/readings-view";
+import { WatchCompare } from "@/components/watch-compare";
 import { ManualEntryForm } from "@/components/manual-entry-form";
 import { Faq } from "@/components/faq";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TimegrapherReading, CustomerSession, AnalyzedImage, TimegrapherReadingData, Position, POSITIONS } from "@/types";
-import { List, Trash2, FilePlus, ChevronRight, Check, X, History, HelpCircle, PlusCircle } from "lucide-react";
+import { TimegrapherReading, AnalyzedImage, TimegrapherReadingData, Position, POSITIONS, Watch } from "@/types";
+import { loadWatches, saveWatches, addTableToWatches } from "@/lib/watch-store";
+import { Trash2, FilePlus, ChevronRight, ChevronLeft, Check, X, Watch as WatchIcon, HelpCircle, PlusCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
+import { format } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("new");
-  const [sessions, setSessions] = useState<CustomerSession[]>([]);
+  const [watches, setWatches] = useState<Watch[]>([]);
   const [activeReadings, setActiveReadings] = useState<TimegrapherReading[]>([]);
-  const [activeCustomerName, setActiveCustomerName] = useState<string>("");
+  const [activeName, setActiveName] = useState<string>("");
   const [activeRefNumber, setActiveRefNumber] = useState<string>("");
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isProcessing, setProcessing] = useState(false);
   const [extractedData, setExtractedData] = useState<AnalyzedImage[]>([]);
+  const [selectedWatchId, setSelectedWatchId] = useState<string | null>(null);
+  const [detailView, setDetailView] = useState<"timeline" | "compare">("timeline");
   const [isHydrated, setIsHydrated] = useState(false);
 
   const { toast } = useToast();
 
   useEffect(() => {
     try {
-      const storedSessions = localStorage.getItem("chronoSessions");
-      if (storedSessions) {
-        setSessions(JSON.parse(storedSessions));
-      }
-
-      const storedCurrentSession = localStorage.getItem("chronoCurrentSession");
-      if (storedCurrentSession) {
-        const { readings, customerName, refNumber, sessionId } = JSON.parse(storedCurrentSession);
+      setWatches(loadWatches());
+      const storedWorkspace = localStorage.getItem("chronoCurrentSession");
+      if (storedWorkspace) {
+        const { readings, customerName, refNumber } = JSON.parse(storedWorkspace);
         setActiveReadings(readings || []);
-        setActiveCustomerName(customerName || "");
+        setActiveName(customerName || "");
         setActiveRefNumber(refNumber || "");
-        setActiveSessionId(sessionId || null);
       }
     } catch (error) {
       console.error("Failed to load state from localStorage", error);
@@ -54,49 +54,33 @@ export default function Home() {
 
   useEffect(() => {
     if (!isHydrated) return;
-    try {
-      localStorage.setItem("chronoSessions", JSON.stringify(sessions));
-    } catch (error) {
-      console.error("Failed to save sessions to localStorage", error);
-    }
-  }, [sessions, isHydrated]);
-  
+    saveWatches(watches);
+  }, [watches, isHydrated]);
+
   useEffect(() => {
     if (!isHydrated) return;
     try {
-      const currentSession = {
-        readings: activeReadings,
-        customerName: activeCustomerName,
-        refNumber: activeRefNumber,
-        sessionId: activeSessionId
-      };
-      localStorage.setItem("chronoCurrentSession", JSON.stringify(currentSession));
+      const workspace = { readings: activeReadings, customerName: activeName, refNumber: activeRefNumber };
+      localStorage.setItem("chronoCurrentSession", JSON.stringify(workspace));
     } catch (error) {
-      console.error("Failed to save current session to localStorage", error);
+      console.error("Failed to save workspace to localStorage", error);
     }
-  }, [activeReadings, activeCustomerName, activeRefNumber, activeSessionId, isHydrated]);
-
+  }, [activeReadings, activeName, activeRefNumber, isHydrated]);
 
   const handleDataExtracted = (data: AnalyzedImage[]) => {
     const sortOrder: Position[] = ['Dial Down', 'Crown Up', 'Crown Down', 'Crown Left', 'Crown Right', 'Dial Up'];
-    
     const sortedData = [...data].sort((a, b) => {
-      const posA = a.data.position;
-      const posB = b.data.position;
-      const indexA = sortOrder.indexOf(posA);
-      const indexB = sortOrder.indexOf(posB);
-
+      const indexA = sortOrder.indexOf(a.data.position);
+      const indexB = sortOrder.indexOf(b.data.position);
       if (indexA === -1 && indexB === -1) return 0;
       if (indexA === -1) return 1;
       if (indexB === -1) return -1;
-
       return indexA - indexB;
     });
-
     setExtractedData(sortedData);
     setActiveTab("review");
   };
-  
+
   const handleReviewSave = () => {
     const newReadings: TimegrapherReading[] = extractedData.map((item, index) => ({
       id: `${Date.now()}-${index}`,
@@ -105,26 +89,21 @@ export default function Home() {
       position: item.data.position || 'Unknown',
     }));
 
-    if (!activeSessionId) {
-      const firstItem = extractedData[0]?.data;
-      if (firstItem?.customerName && !activeCustomerName) setActiveCustomerName(firstItem.customerName);
-      if (firstItem?.refNumber && !activeRefNumber) setActiveRefNumber(firstItem.refNumber);
-    }
+    const firstItem = extractedData[0]?.data;
+    if (firstItem?.customerName && !activeName) setActiveName(firstItem.customerName);
+    if (firstItem?.refNumber && !activeRefNumber) setActiveRefNumber(firstItem.refNumber);
 
     setActiveReadings(prev => [...prev, ...newReadings]);
     setExtractedData([]);
     setActiveTab("new");
-    toast({
-        title: "Readings Added",
-        description: "The new readings have been added to the current session."
-    });
+    toast({ title: "Readings Added", description: "The new readings have been added to the workspace." });
   };
 
   const handleReviewCancel = () => {
     setExtractedData([]);
     setActiveTab("new");
   };
-  
+
   const handleExtractedDataChange = (index: number, field: keyof TimegrapherReadingData, value: string) => {
     const updatedData = [...extractedData];
     (updatedData[index].data as any)[field] = value;
@@ -132,66 +111,41 @@ export default function Home() {
   };
 
   const handleManualDataAdded = (data: TimegrapherReadingData) => {
-    if(!activeCustomerName && data.customerName) setActiveCustomerName(data.customerName);
-    if(!activeRefNumber && data.refNumber) setActiveRefNumber(data.refNumber);
-    
-    const newReading: TimegrapherReading = {
-      id: `${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      ...data
-    };
+    if (!activeName && data.customerName) setActiveName(data.customerName);
+    if (!activeRefNumber && data.refNumber) setActiveRefNumber(data.refNumber);
+    const newReading: TimegrapherReading = { id: `${Date.now()}`, timestamp: new Date().toISOString(), ...data };
     setActiveReadings(prev => [...prev, newReading]);
   };
 
-  const handleSaveSession = () => {
+  // Save the current workspace as a new dated table under a watch (matched by name + ref, or created).
+  const handleSaveToWatch = () => {
     if (activeReadings.length === 0) {
       toast({ variant: "destructive", title: "Cannot Save", description: "There are no readings to save." });
       return;
     }
-
-    if (activeSessionId) {
-      setSessions(sessions.map(s => s.id === activeSessionId ? { ...s, readings: activeReadings, customerName: activeCustomerName, refNumber: activeRefNumber } : s));
-      toast({ title: "Session Updated", description: `Session for ${activeCustomerName || 'Unnamed'} has been updated.` });
-    } else {
-      const newSession: CustomerSession = {
-        id: `sess-${Date.now()}`,
-        customerName: activeCustomerName || "Untitled Session",
-        refNumber: activeRefNumber || "N/A",
-        createdAt: new Date().toISOString(),
-        readings: activeReadings
-      };
-      setSessions([newSession, ...sessions]);
-      setActiveSessionId(newSession.id);
-      toast({ title: "Session Saved", description: `New session created for ${newSession.customerName}.` });
-    }
+    const name = activeName || "Untitled watch";
+    setWatches(prev => addTableToWatches(prev, name, activeRefNumber, activeReadings));
+    setActiveReadings([]); // table captured; keep name/ref so the next capture (e.g. "after") attaches to the same watch
+    toast({ title: "Saved to Watch", description: `A new readings table was added to “${name}”.` });
   };
 
-  const handleNewSession = () => {
+  const handleClearWorkspace = () => {
     setActiveReadings([]);
-    setActiveCustomerName("");
+    setActiveName("");
     setActiveRefNumber("");
-    setActiveSessionId(null);
     setActiveTab("new");
-    toast({ title: "New Session", description: "Cleared workspace for a new regulation session." });
+    toast({ title: "New Watch", description: "Cleared the workspace for a new watch." });
   };
 
-  const handleSelectSession = (session: CustomerSession) => {
-    setActiveReadings(session.readings);
-    setActiveCustomerName(session.customerName);
-    setActiveRefNumber(session.refNumber);
-    setActiveSessionId(session.id);
-    setActiveTab("new");
-  };
-
-  const handleDeleteSession = (sessionId: string) => {
-    setSessions(sessions.filter(s => s.id !== sessionId));
-    if (activeSessionId === sessionId) {
-      handleNewSession();
-    }
-    toast({ variant: "destructive", title: "Session Deleted", description: "The session has been permanently removed." });
+  const handleDeleteWatch = (watchId: string) => {
+    setWatches(prev => prev.filter(w => w.id !== watchId));
+    if (selectedWatchId === watchId) setSelectedWatchId(null);
+    toast({ variant: "destructive", title: "Watch Deleted", description: "The watch and its history were removed." });
   };
 
   if (!isHydrated) return null;
+
+  const selectedWatch = watches.find(w => w.id === selectedWatchId) ?? null;
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -201,36 +155,36 @@ export default function Home() {
           <TabsList className="grid w-full grid-cols-4 bg-background border rounded-lg p-1">
             <TabsTrigger value="new" className="data-[state=active]:bg-muted"><PlusCircle className="mr-2 h-4 w-4 hidden sm:inline" />New</TabsTrigger>
             <TabsTrigger value="review" disabled={extractedData.length === 0} className="data-[state=active]:bg-muted">Review</TabsTrigger>
-            <TabsTrigger value="sessions" className="data-[state=active]:bg-muted"><History className="mr-2 h-4 w-4 hidden sm:inline" />Sessions</TabsTrigger>
+            <TabsTrigger value="watches" className="data-[state=active]:bg-muted"><WatchIcon className="mr-2 h-4 w-4 hidden sm:inline" />Watches</TabsTrigger>
             <TabsTrigger value="faq" className="data-[state=active]:bg-muted"><HelpCircle className="mr-2 h-4 w-4 hidden sm:inline" />FAQ</TabsTrigger>
           </TabsList>
-          
+
           <div className="mt-4">
             <TabsContent value="new">
               <div className="grid gap-4 md:grid-cols-[1fr_2fr]">
                 <div className="space-y-4">
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg">Customer Info</CardTitle>
-                      <CardDescription>Associate these readings with a client.</CardDescription>
+                      <CardTitle className="text-lg">Watch</CardTitle>
+                      <CardDescription>Name this watch so its readings build up over time.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid gap-2">
-                        <Label htmlFor="main-customer">Customer Name</Label>
-                        <Input 
-                          id="main-customer" 
-                          placeholder="e.g. Rolex Service Center" 
-                          value={activeCustomerName} 
-                          onChange={(e) => setActiveCustomerName(e.target.value)} 
+                        <Label htmlFor="watch-name">Watch Name</Label>
+                        <Input
+                          id="watch-name"
+                          placeholder="e.g. Omega Seamaster – J. Doe"
+                          value={activeName}
+                          onChange={(e) => setActiveName(e.target.value)}
                         />
                       </div>
                       <div className="grid gap-2">
-                        <Label htmlFor="main-ref">Reference Number</Label>
-                        <Input 
-                          id="main-ref" 
-                          placeholder="e.g. 116610LN" 
-                          value={activeRefNumber} 
-                          onChange={(e) => setActiveRefNumber(e.target.value)} 
+                        <Label htmlFor="watch-ref">Reference Number</Label>
+                        <Input
+                          id="watch-ref"
+                          placeholder="e.g. 116610LN"
+                          value={activeRefNumber}
+                          onChange={(e) => setActiveRefNumber(e.target.value)}
                         />
                       </div>
                     </CardContent>
@@ -257,21 +211,21 @@ export default function Home() {
                   </Card>
                 </div>
 
-                <ReadingsTable 
-                  readings={activeReadings} 
+                <ReadingsTable
+                  readings={activeReadings}
                   setReadings={setActiveReadings}
-                  customerName={activeCustomerName}
+                  customerName={activeName}
                   refNumber={activeRefNumber}
-                  onSave={handleSaveSession}
+                  onSave={handleSaveToWatch}
                 />
               </div>
             </TabsContent>
 
             <TabsContent value="review">
-               <Card>
+              <Card>
                 <CardHeader>
                   <CardTitle>Verify OCR Extraction</CardTitle>
-                  <CardDescription>Adjust any values that Gemini may have misread from the timegrapher display.</CardDescription>
+                  <CardDescription>Adjust any values the OCR may have misread from the timegrapher display.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid gap-4">
@@ -279,102 +233,139 @@ export default function Home() {
                       <Card key={index} className="bg-muted/30">
                         <CardContent className="p-4 flex flex-col md:flex-row gap-6">
                           <div className="w-full md:w-48 relative aspect-video border rounded-md overflow-hidden bg-black flex-shrink-0">
-                             <Image src={item.imageUrl} alt={`Reading ${index + 1}`} fill className="object-contain" />
+                            <Image src={item.imageUrl} alt={`Reading ${index + 1}`} fill className="object-contain" />
                           </div>
                           <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
-                              <div className="space-y-2">
-                                  <Label className="text-xs text-muted-foreground uppercase">Rate (s/d)</Label>
-                                  <Input className="h-9" value={item.data.rate} onChange={(e) => handleExtractedDataChange(index, 'rate', e.target.value)} />
-                              </div>
-                              <div className="space-y-2">
-                                  <Label className="text-xs text-muted-foreground uppercase">Amplitude (°)</Label>
-                                  <Input className="h-9" value={item.data.amplitude} onChange={(e) => handleExtractedDataChange(index, 'amplitude', e.target.value)} />
-                              </div>
-                              <div className="space-y-2">
-                                  <Label className="text-xs text-muted-foreground uppercase">Beat Error (ms)</Label>
-                                  <Input className="h-9" value={item.data.beatError} onChange={(e) => handleExtractedDataChange(index, 'beatError', e.target.value)} />
-                              </div>
-                               <div className="space-y-2">
-                                  <Label className="text-xs text-muted-foreground uppercase">Position</Label>
-                                  <Select
-                                    value={item.data.position}
-                                    onValueChange={(value) => handleExtractedDataChange(index, 'position', value)}
-                                  >
-                                    <SelectTrigger className="h-9">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {POSITIONS.map((pos) => (
-                                        <SelectItem key={pos} value={pos}>{pos}</SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                              </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs text-muted-foreground uppercase">Rate (s/d)</Label>
+                              <Input className="h-9" value={item.data.rate} onChange={(e) => handleExtractedDataChange(index, 'rate', e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs text-muted-foreground uppercase">Amplitude (°)</Label>
+                              <Input className="h-9" value={item.data.amplitude} onChange={(e) => handleExtractedDataChange(index, 'amplitude', e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs text-muted-foreground uppercase">Beat Error (ms)</Label>
+                              <Input className="h-9" value={item.data.beatError} onChange={(e) => handleExtractedDataChange(index, 'beatError', e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs text-muted-foreground uppercase">Position</Label>
+                              <Select value={item.data.position} onValueChange={(value) => handleExtractedDataChange(index, 'position', value)}>
+                                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  {POSITIONS.map((pos) => (<SelectItem key={pos} value={pos}>{pos}</SelectItem>))}
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
                     ))}
                   </div>
                   <div className="flex justify-end gap-3 pt-6 border-t">
-                      <Button variant="ghost" onClick={handleReviewCancel}><X className="mr-2 h-4 w-4"/>Discard</Button>
-                      <Button onClick={handleReviewSave} className="px-8"><Check className="mr-2 h-4 w-4"/>Confirm All Readings</Button>
+                    <Button variant="ghost" onClick={handleReviewCancel}><X className="mr-2 h-4 w-4" />Discard</Button>
+                    <Button onClick={handleReviewSave} className="px-8"><Check className="mr-2 h-4 w-4" />Confirm All Readings</Button>
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
 
-            <TabsContent value="sessions">
-               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                  <div>
-                    <CardTitle>Session Archives</CardTitle>
-                    <CardDescription>A history of all completed watch regulations.</CardDescription>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={handleNewSession}><FilePlus className="mr-2 h-4 w-4" /> New Session</Button>
-                </CardHeader>
-                <CardContent>
-                  <div className="rounded-md border bg-background">
-                      {sessions.length > 0 ? (
+            <TabsContent value="watches">
+              {selectedWatch ? (
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <Button variant="ghost" size="sm" onClick={() => setSelectedWatchId(null)}>
+                        <ChevronLeft className="mr-1 h-4 w-4" /> All Watches
+                      </Button>
+                    </div>
+                    <CardTitle className="text-primary pt-2">{selectedWatch.name}</CardTitle>
+                    <CardDescription>
+                      Ref: <span className="font-medium text-foreground">{selectedWatch.refNumber || 'N/A'}</span>
+                      {"  •  "}{selectedWatch.tables.length} reading{selectedWatch.tables.length === 1 ? '' : 's'} table{selectedWatch.tables.length === 1 ? '' : 's'} over time
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex gap-2">
+                      <Button variant={detailView === "timeline" ? "default" : "outline"} size="sm" onClick={() => setDetailView("timeline")}>Timeline</Button>
+                      <Button variant={detailView === "compare" ? "default" : "outline"} size="sm" onClick={() => setDetailView("compare")}>Compare progress</Button>
+                    </div>
+
+                    {detailView === "compare" ? (
+                      <WatchCompare watch={selectedWatch} />
+                    ) : (
+                      <div className="space-y-6">
+                        {selectedWatch.tables.map((table) => (
+                          <div key={table.id} className="space-y-2">
+                            <div className="flex items-center gap-2 text-sm font-medium">
+                              <span className="text-muted-foreground">{format(new Date(table.createdAt), "PPp")}</span>
+                              <span className="text-xs text-muted-foreground">— {table.readings.length} reading{table.readings.length === 1 ? '' : 's'}</span>
+                            </div>
+                            <ReadingsView readings={table.readings} />
+                          </div>
+                        ))}
+                        {selectedWatch.tables.length === 0 && (
+                          <p className="text-sm text-muted-foreground py-8 text-center">No readings tables yet for this watch.</p>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                    <div>
+                      <CardTitle>Watches</CardTitle>
+                      <CardDescription>Every watch you&apos;ve recorded, with its history of readings.</CardDescription>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={handleClearWorkspace}><FilePlus className="mr-2 h-4 w-4" /> New Watch</Button>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border bg-background">
+                      {watches.length > 0 ? (
                         <div className="divide-y">
-                          {sessions.map(session => (
-                            <div key={session.id} className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors group">
-                              <div className="flex-grow">
-                                <h4 className="font-semibold text-primary">{session.customerName}</h4>
-                                <div className="flex gap-3 text-sm text-muted-foreground mt-1">
-                                  <span>Ref: <span className="font-medium text-foreground">{session.refNumber}</span></span>
-                                  <span>•</span>
-                                  <span>{session.readings.length} readings</span>
-                                  <span>•</span>
-                                  <span>{new Date(session.createdAt).toLocaleDateString()}</span>
-                                </div>
-                              </div>
-                               <div className="flex items-center gap-2">
-                                  <Button variant="ghost" size="sm" onClick={() => handleSelectSession(session)} className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                      Open <ChevronRight className="ml-1 h-4 w-4" />
+                          {watches.map((watch) => {
+                            const lastTable = watch.tables[0];
+                            return (
+                              <div key={watch.id} className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors group">
+                                <button className="flex-grow text-left" onClick={() => setSelectedWatchId(watch.id)}>
+                                  <h4 className="font-semibold text-primary">{watch.name}</h4>
+                                  <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mt-1">
+                                    <span>Ref: <span className="font-medium text-foreground">{watch.refNumber || 'N/A'}</span></span>
+                                    <span>•</span>
+                                    <span>{watch.tables.length} table{watch.tables.length === 1 ? '' : 's'}</span>
+                                    {lastTable && (<><span>•</span><span>last {format(new Date(lastTable.createdAt), "PP")}</span></>)}
+                                  </div>
+                                </button>
+                                <div className="flex items-center gap-2">
+                                  <Button variant="ghost" size="sm" onClick={() => setSelectedWatchId(watch.id)} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                    Open <ChevronRight className="ml-1 h-4 w-4" />
                                   </Button>
-                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteSession(session.id)}>
+                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteWatch(watch.id)}>
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
-                               </div>
-                            </div>
-                          ))}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       ) : (
-                         <div className="flex flex-col items-center justify-center gap-3 py-20">
+                        <div className="flex flex-col items-center justify-center gap-3 py-20">
                           <div className="p-4 rounded-full bg-muted">
-                            <History className="h-8 w-8 text-muted-foreground/60" />
+                            <WatchIcon className="h-8 w-8 text-muted-foreground/60" />
                           </div>
-                          <h3 className="text-lg font-medium">No Archives Found</h3>
-                          <p className="text-sm text-muted-foreground text-center max-w-[250px]">Your saved regulation reports will appear here for future reference.</p>
+                          <h3 className="text-lg font-medium">No Watches Yet</h3>
+                          <p className="text-sm text-muted-foreground text-center max-w-[260px]">Record readings on the New tab and Save to Watch — they&apos;ll build up here over time.</p>
                         </div>
                       )}
-                  </div>
-                </CardContent>
-              </Card>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             <TabsContent value="faq">
-               <Card>
+              <Card>
                 <CardHeader>
                   <CardTitle>Operator Knowledge Base</CardTitle>
                   <CardDescription>Technical documentation for the Weishi Timegrapher No. 1000.</CardDescription>

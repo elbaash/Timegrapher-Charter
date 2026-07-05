@@ -4,7 +4,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { analyzeImage } from "@/app/actions";
+import { runClientOcr } from "@/lib/ocr";
 import { UploadCloud, X, LoaderCircle, CheckCircle, Image as ImageIcon, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -92,23 +92,28 @@ export function Uploader({ onDataExtracted, isProcessing, setProcessing }: Uploa
     try {
       const results: (AnalyzedImage | null)[] = await Promise.all(
         files.map(async (filePreview) => {
-          const result = await analyzeImage(filePreview.previewUrl);
-          if (result.error) {
+          const { parsed } = await runClientOcr(filePreview.previewUrl);
+          if (parsed.score === 0) {
             toast({
               variant: "destructive",
-              title: `Analysis Failed for ${filePreview.file.name}`,
-              description: result.error,
+              title: `Couldn't read ${filePreview.file.name}`,
+              description: "No readings detected — try a clearer photo or use Manual Entry.",
             });
-            return null; // Return null for failed analyses
+            return null; // Nothing usable extracted
           }
-           // Assign customer and ref number to each result
+          // Map parsed fields onto a reading. Position isn't on the display (it's on a paper/case),
+          // so it defaults to Unknown for the user to set in Review. liftAngle defaults to 52.
           return {
             imageUrl: filePreview.previewUrl,
             data: {
-              ...result.data,
+              rate: parsed.rate,
+              amplitude: parsed.amplitude,
+              beatError: parsed.beatError,
+              position: "Unknown",
+              liftAngle: parsed.liftAngle || "52",
               customerName: customerName || "",
               refNumber: refNumber || "",
-            }
+            },
           };
         })
       );

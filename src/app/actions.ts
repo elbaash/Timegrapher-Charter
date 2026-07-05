@@ -1,8 +1,13 @@
 "use server";
 
-import { extractTimegrapherData } from "@/ai/flows/extract-timegrapher-data";
+import { extractTimegrapherData, type ExtractTimegrapherDataOutput } from "@/ai/flows/extract-timegrapher-data";
 
-export async function analyzeImage(photoDataUri: string) {
+type AnalyzeImageResult = {
+  data: ExtractTimegrapherDataOutput | null;
+  error: string | null;
+};
+
+export async function analyzeImage(photoDataUri: string): Promise<AnalyzeImageResult> {
   try {
     if (!photoDataUri) {
       throw new Error("Image data is missing.");

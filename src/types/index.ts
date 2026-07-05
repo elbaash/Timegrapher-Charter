@@ -37,10 +37,28 @@ export type AnalyzedImage = {
   data: TimegrapherReadingData;
 };
 
+// Legacy flat archive shape — kept for one-time migration into the watch model (see watch-store.ts).
 export type CustomerSession = {
   id: string;
   customerName: string;
   refNumber: string;
   createdAt: string | Date;
   readings: TimegrapherReading[];
+}
+
+// A single dated capture pass — one set of position readings taken at one time.
+export type ReadingsTable = {
+  id: string;
+  createdAt: string | Date;
+  readings: TimegrapherReading[];
+}
+
+// A named watch the user tracks over time: owns a chronological history of readings tables.
+// This is the top-level archive entity (the "look back on" / before-after unit).
+export type Watch = {
+  id: string;
+  name: string;
+  refNumber: string;
+  createdAt: string | Date;
+  tables: ReadingsTable[];
 }
