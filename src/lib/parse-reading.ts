@@ -24,7 +24,9 @@ export function parseReadingText(raw: string): ParsedReading {
 
   // Rate: 1–3 digit number (optional sign) before an "s/d"-like token. The unit letter often garbles
   // (s → ¢/c) or drops entirely, so allow an optional letter and optional slash before a terminal "d".
-  const rateM = text.match(/([+\-]?\d{1,3})\s*(?:[a-z¢$]\s*)?\/?\s*d\b/i);
+  // "…d" may be followed immediately by the amplitude digits (e.g. PaddleOCR emits "+34s/d206"),
+  // so match the trailing d when it's NOT followed by another letter rather than requiring a word break.
+  const rateM = text.match(/([+\-]?\d{1,3})\s*(?:[a-z¢$]\s*)?\/?\s*d(?![a-zA-Z])/i);
   let region = text;
   if (rateM) {
     out.rate = rateM[1].replace(/\s+/g, "");
@@ -46,7 +48,10 @@ export function parseReadingText(raw: string): ParsedReading {
     out.beatError = clean(be.s);
   } else if (amp) {
     const next = toks[toks.indexOf(amp) + 1];
-    if (next && isInt(next) && next.n >= 0 && next.n < 20) {
+    // The value right after amplitude is beat error. If OCR dropped the decimal, re-insert it
+    // ("24"→"2.4", "07"→"0.7"). Skip values ~52 so we don't mistake the lift angle for beat error.
+    const liftLike = !!next && next.n >= 48 && next.n <= 56;
+    if (next && isInt(next) && next.n >= 0 && next.n < 100 && !liftLike) {
       const d = clean(next.s);
       out.beatError = d.length >= 2 ? `${d[0]}.${d[1]}` : `0.${d}`;
     }
@@ -54,6 +59,11 @@ export function parseReadingText(raw: string): ParsedReading {
 
   const br = toks.find((t) => isInt(t) && t.n >= 10000 && t.n < 30000); // beat rate (bph)
   if (br) out.beatRate = br.s;
+
+  // Lift angle (L.A. on the display) sits around 52°, a distinct range from the other fields.
+  // Clean OCR reads it reliably off the value line; the caller still defaults to "52" if it's missing.
+  const la = toks.find((t) => t.n >= 45 && t.n <= 58);
+  if (la) out.liftAngle = clean(la.s);
 
   out.score = [out.rate, out.amplitude, out.beatError, out.beatRate].filter(Boolean).length;
   return out;

@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { format } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("new");
@@ -67,17 +68,18 @@ export default function Home() {
     }
   }, [activeReadings, activeName, activeRefNumber, isHydrated]);
 
+  // Position isn't printed on the display — it's the physical placement the watchmaker uses, in the
+  // machine's fixed printed order (Dial down · Crown up · Down · Left · Right · Dial up). Since photos
+  // are taken in that order, auto-label each reading by its capture position; the user can adjust in Review.
+  const MACHINE_POSITION_ORDER: Position[] = ['Dial Down', 'Crown Up', 'Crown Down', 'Crown Left', 'Crown Right', 'Dial Up'];
+
   const handleDataExtracted = (data: AnalyzedImage[]) => {
-    const sortOrder: Position[] = ['Dial Down', 'Crown Up', 'Crown Down', 'Crown Left', 'Crown Right', 'Dial Up'];
-    const sortedData = [...data].sort((a, b) => {
-      const indexA = sortOrder.indexOf(a.data.position);
-      const indexB = sortOrder.indexOf(b.data.position);
-      if (indexA === -1 && indexB === -1) return 0;
-      if (indexA === -1) return 1;
-      if (indexB === -1) return -1;
-      return indexA - indexB;
-    });
-    setExtractedData(sortedData);
+    const labeled = data.map((item, i) =>
+      item.data.position && item.data.position !== 'Unknown'
+        ? item
+        : { ...item, data: { ...item.data, position: MACHINE_POSITION_ORDER[i] ?? 'Unknown' } }
+    );
+    setExtractedData(labeled);
     setActiveTab("review");
   };
 
@@ -197,7 +199,7 @@ export default function Home() {
                     <CardContent>
                       <Tabs defaultValue="upload">
                         <TabsList className="grid w-full grid-cols-2 mb-4">
-                          <TabsTrigger value="upload">AI OCR</TabsTrigger>
+                          <TabsTrigger value="upload">Batch photos</TabsTrigger>
                           <TabsTrigger value="manual">Manual</TabsTrigger>
                         </TabsList>
                         <TabsContent value="upload">
@@ -225,7 +227,7 @@ export default function Home() {
               <Card>
                 <CardHeader>
                   <CardTitle>Verify OCR Extraction</CardTitle>
-                  <CardDescription>Adjust any values the OCR may have misread from the timegrapher display.</CardDescription>
+                  <CardDescription>Adjust any values the OCR may have misread. Fields outlined in amber came back blank — please fill those in.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid gap-4">
@@ -235,18 +237,22 @@ export default function Home() {
                           <div className="w-full md:w-48 relative aspect-video border rounded-md overflow-hidden bg-black flex-shrink-0">
                             <Image src={item.imageUrl} alt={`Reading ${index + 1}`} fill className="object-contain" />
                           </div>
-                          <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="flex-1 grid grid-cols-2 md:grid-cols-3 gap-4">
                             <div className="space-y-2">
                               <Label className="text-xs text-muted-foreground uppercase">Rate (s/d)</Label>
-                              <Input className="h-9" value={item.data.rate} onChange={(e) => handleExtractedDataChange(index, 'rate', e.target.value)} />
+                              <Input className={cn("h-9", !item.data.rate && "ring-1 ring-amber-500/60")} placeholder="—" value={item.data.rate} onChange={(e) => handleExtractedDataChange(index, 'rate', e.target.value)} />
                             </div>
                             <div className="space-y-2">
-                              <Label className="text-xs text-muted-foreground uppercase">Amplitude (°)</Label>
-                              <Input className="h-9" value={item.data.amplitude} onChange={(e) => handleExtractedDataChange(index, 'amplitude', e.target.value)} />
+                              <Label className="text-xs text-muted-foreground uppercase">Amp (°)</Label>
+                              <Input className={cn("h-9", !item.data.amplitude && "ring-1 ring-amber-500/60")} placeholder="—" value={item.data.amplitude} onChange={(e) => handleExtractedDataChange(index, 'amplitude', e.target.value)} />
                             </div>
                             <div className="space-y-2">
-                              <Label className="text-xs text-muted-foreground uppercase">Beat Error (ms)</Label>
-                              <Input className="h-9" value={item.data.beatError} onChange={(e) => handleExtractedDataChange(index, 'beatError', e.target.value)} />
+                              <Label className="text-xs text-muted-foreground uppercase">B.E. (ms)</Label>
+                              <Input className={cn("h-9", !item.data.beatError && "ring-1 ring-amber-500/60")} placeholder="—" value={item.data.beatError} onChange={(e) => handleExtractedDataChange(index, 'beatError', e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs text-muted-foreground uppercase">L.A. (°)</Label>
+                              <Input className={cn("h-9", !item.data.liftAngle && "ring-1 ring-amber-500/60")} placeholder="—" value={item.data.liftAngle} onChange={(e) => handleExtractedDataChange(index, 'liftAngle', e.target.value)} />
                             </div>
                             <div className="space-y-2">
                               <Label className="text-xs text-muted-foreground uppercase">Position</Label>

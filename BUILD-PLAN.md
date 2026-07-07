@@ -45,6 +45,22 @@ Prove and refine the riskiest part first: photo → readings, in the browser, wi
       Verified live: on the upside-down photo it CORRECTED amplitude 180→150 and beat rate
       12800→19800 vs the low-res pass. Residual: the +/- rate sign is still dropped by OCR
       (`+`→nothing, `-`→`s`) — a review-step correction, not fixable by resolution.
+- [x] Crop-to-display step (real-world reliability, 2026-07-06): optional per-photo crop
+      (`react-easy-crop`) that frames just the screen and feeds that tight image to OCR
+      (`uploader.tsx`, `FilePreview.ocrUrl`); the whole-image auto path is unchanged. EXIF baked in
+      before cropping so coordinates match. Plus beat-error parser robustness (`parse-reading.ts`)
+      and an amber "check" cue on blank Review fields (`page.tsx`). Verified live: crop dialog →
+      "cropped" badge → analyze uses the crop; a well-framed image populates rate+amp+beat.
+- [x] **Switched OCR engine to PaddleOCR (PP-OCRv4) in-browser** (2026-07-07) via onnxruntime-web +
+      `@gutenye/ocr-browser` (`src/lib/ocr-paddle.ts`; models+wasm self-hosted in `public/models`,
+      `public/ort`). Benchmark on the 17 real photos: **PaddleOCR 97% vs Tesseract 53%** field accuracy.
+      Verified live: wide shot → `+34/206/2.4`, upside-down → `-24/150/0.2` (both incl. sign), ~2s warm
+      per image (first use ~20s to download ~30MB models/wasm, then cached). `uploader.tsx` now calls
+      `runPaddleOcr`. Notes: dev switched off Turbopack (webpack needed for onnxruntime-web/opencv
+      bundling — `fs`/`path` fallbacks in `next.config.ts`); old Tesseract path (`src/lib/ocr.ts`) now
+      unused, kept as a fallback for now. Also: auto-label positions by capture order (machine sequence).
+- [ ] Trim OCR download weight if needed (~30MB: 16MB models + opencv + ort wasm) — e.g. recognition-only
+      via the crop step to drop opencv; or smaller models. Revisit after real-phone testing.
 - [ ] Sweep all 17 images for an accuracy baseline (optional; representative 2 pass well)
 - [ ] Self-host the Tesseract worker/wasm/model (default fetches from CDN — needed for true offline) ← NEXT
 - [ ] Remove Gemini/Genkit path once client OCR is trusted (deps, `actions.ts`, `src/ai/`, dev scripts)

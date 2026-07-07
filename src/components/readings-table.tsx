@@ -161,8 +161,8 @@ export function ReadingsTable({ readings, setReadings, customerName, refNumber, 
                   <TableHead className="w-[120px] text-xs">Position</TableHead>
                   <TableHead className="text-xs">Rate</TableHead>
                   <TableHead className="text-xs">Amp</TableHead>
-                  <TableHead className="text-xs">B.Err</TableHead>
-                  <TableHead className="text-xs hidden md:table-cell">Lift</TableHead>
+                  <TableHead className="text-xs">B.E.</TableHead>
+                  <TableHead className="text-xs">L.A.</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -173,7 +173,7 @@ export function ReadingsTable({ readings, setReadings, customerName, refNumber, 
                       <TableCell className="font-mono text-xs">{reading.rate}s/d</TableCell>
                       <TableCell className="font-mono text-xs">{reading.amplitude}°</TableCell>
                       <TableCell className="font-mono text-xs">{reading.beatError}ms</TableCell>
-                      <TableCell className="font-mono text-xs hidden md:table-cell text-muted-foreground">{reading.liftAngle}°</TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">{reading.liftAngle}°</TableCell>
                     </TableRow>
                   ))
                 ) : (

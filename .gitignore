@@ -41,6 +41,10 @@ next-env.d.ts
 .env*
 !.env.example
 
+# OCR runtime assets — generated from node_modules by scripts/setup-ocr-assets.mjs
+/public/models/
+/public/ort/
+
 # firebase
 firebase-debug.log
 firestore-debug.log

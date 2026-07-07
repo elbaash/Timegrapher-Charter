@@ -14,8 +14,8 @@ export function ReadingsView({ readings }: { readings: TimegrapherReading[] }) {
             <TableHead className="text-xs w-[120px]">Position</TableHead>
             <TableHead className="text-xs">Rate</TableHead>
             <TableHead className="text-xs">Amp</TableHead>
-            <TableHead className="text-xs">B.Err</TableHead>
-            <TableHead className="text-xs hidden md:table-cell">Lift</TableHead>
+            <TableHead className="text-xs">B.E.</TableHead>
+            <TableHead className="text-xs">L.A.</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -25,7 +25,7 @@ export function ReadingsView({ readings }: { readings: TimegrapherReading[] }) {
               <TableCell className="font-mono text-xs">{r.rate}s/d</TableCell>
               <TableCell className="font-mono text-xs">{r.amplitude}°</TableCell>
               <TableCell className="font-mono text-xs">{r.beatError}ms</TableCell>
-              <TableCell className="font-mono text-xs hidden md:table-cell text-muted-foreground">{r.liftAngle}°</TableCell>
+              <TableCell className="font-mono text-xs text-muted-foreground">{r.liftAngle}°</TableCell>
             </TableRow>
           ))}
         </TableBody>
