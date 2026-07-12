@@ -1,5 +1,9 @@
 # Project Handover: ChronoGrapher Professional
 
+> **⚠️ SUPERSEDED (2026-07-07) by [`MASTER-PLAN.md`](MASTER-PLAN.md).** This handover describes the
+> earlier **Gemini/cloud** design and is kept for history only. For the current app (in-browser
+> PaddleOCR, watch-history data model, offline-PWA direction), read `MASTER-PLAN.md`.
+
 **Document version:** 2.1.0
 **Last updated:** 2026-07-05
 

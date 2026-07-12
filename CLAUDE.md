@@ -1,10 +1,24 @@
 # ChronoGrapher Professional — CLAUDE.md
 
-> **There is a sibling mobile port in progress** at `../timegrapher-mobile/` (Expo + React Native + on-device ML Kit OCR + SQLite). This web app is the **UI/UX reference** for the mobile project — do not modify this app to support the mobile work. See [`../timegrapher-mobile/CLAUDE.md`](../timegrapher-mobile/CLAUDE.md) for mobile project status.
+> ## 📌 Source of truth: [`MASTER-PLAN.md`](MASTER-PLAN.md)
+> Read **`MASTER-PLAN.md`** first — it holds the current purpose, goals, architecture, current state,
+> risks, and the roadmap (what to build next). It supersedes this file, `BUILD-PLAN.md`, and
+> `Handover.md` wherever they disagree. The notes below are kept for code-navigation detail but are
+> **partly stale** (see the correction directly below).
+
+> **⚠️ What changed since this file was written (as of 2026-07-07):** OCR no longer uses Gemini/cloud —
+> it runs **PaddleOCR in-browser** (`src/lib/ocr-paddle.ts`), fully offline. The data model is now
+> **Watch → dated ReadingsTable → readings** (not one-off "customer sessions"), with a per-watch
+> timeline and a progress-comparison view. The direction is an **installable offline PWA**, free, for
+> watchmakers to share. The Firebase layer was removed. The sibling Expo project (`../timegrapher-mobile/`)
+> is **parked**. Treat statements about Gemini/Genkit, Firebase, and "customer sessions" below as history.
 
 ## What This App Does
 
-A single-page utility for professional watchmakers. It uses **Gemini 2.5 Flash** (vision AI) to OCR photos of a **Weishi Timegrapher No. 1000** display and extract four measurements: Rate (s/d), Amplitude (°), Beat Error (ms), and Position. Readings are grouped into customer sessions, verified in a review step, then archived locally or printed as a "Regulation Certificate."
+A single-page app for watchmakers. It OCRs photos of a **Weishi Timegrapher** display **on-device**
+(PaddleOCR in the browser — no cloud, no API key) to extract Rate (s/d), Amplitude (°), Beat Error (ms),
+Lift Angle (°), and Position. Readings are reviewed by a human, then saved as **dated tables under a
+named watch**, so the watchmaker can regulate over several passes, compare progress, and share a report.
 
 ---
 

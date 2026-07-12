@@ -1,7 +1,10 @@
 # ChronoGrapher — Build Plan (living checklist)
 
-> Tick items off as we go. This is the current source of truth for what we're building and
-> where we are. Last updated: 2026-07-05.
+> **⚠️ SUPERSEDED (2026-07-07) by [`MASTER-PLAN.md`](MASTER-PLAN.md).** Kept for history — the OCR
+> implementation log below is still useful detail, but the authoritative purpose, roadmap, and status
+> now live in `MASTER-PLAN.md`.
+
+> Tick items off as we go. Last updated: 2026-07-05.
 
 ## The decision (why this plan)
 
