@@ -46,13 +46,13 @@ Dial Down → Crown Up → Crown Down → Crown Left → Crown Right → Dial Up
 - **Named watches** → dated readings tables → **timeline**. **[DONE]**
 - **Progress comparison** across all attempts (not just two). **[DONE]**
 - **Crop-to-display** for reliability; positions **auto-labelled** in machine order, editable. **[DONE]**
-- **Camera capture** on the phone (take the photo in-app, not only gallery). **[TODO]**
-- **Share/export** a table (and a comparison) as PDF/image via the share sheet. **[TODO]**
-- **Data export & import (backup)** so a watch's history can't just vanish. **[TODO — critical]**
-- **Installable, fully-offline PWA** (manifest, icons, service worker; works with no network). **[TODO]**
-- **First-run onboarding/help** for watchmakers new to the app. **[TODO]**
+- **Camera capture** on the phone (take the photo in-app, not only gallery). **[DONE]**
+- **Share/export** a table (and a comparison) as PDF/image via the share sheet. **[DONE]**
+- **Data export & import (backup)** so a watch's history can't just vanish. **[DONE]**
+- **Installable, fully-offline PWA** (manifest, icons, service worker; works with no network). **[DONE]**
+- **First-run onboarding/help** for watchmakers new to the app. **[DONE]**
 
-**SHOULD:** robust storage (**IndexedDB**) for quota + eviction resilience; trim OCR download weight and
+**SHOULD:** robust storage (**IndexedDB**) for quota + eviction resilience **[DONE]**; trim OCR download weight and
 confirm phone performance; delete dead code (old Tesseract path, Gemini/Genkit remnants).
 
 **COULD (post-v1):** Capacitor store wrap; live camera with a framing-guide overlay; multi-language OCR;
@@ -60,7 +60,10 @@ confidence hints.
 
 ## 5. Architecture & Tech
 - **Framework:** Next.js (App Router) SPA. Almost all app state lives in `src/app/page.tsx`.
-- **Persistence:** `localStorage` today via `src/lib/watch-store.ts`; **IndexedDB planned** (data safety).
+- **Persistence:** **IndexedDB** primary (`src/lib/db.ts`, single atomic value) via `src/lib/watch-store.ts`,
+  with a best-effort localStorage mirror as a second copy; one-time migration from the old localStorage
+  keys; `navigator.storage.persist()` requested on load. Versioned JSON backup export/import (merge-only,
+  idempotent) from the Watches tab.
 - **Data model:** `Watch → ReadingsTable → readings` in `src/types/index.ts`.
 - **OCR:** PaddleOCR **PP-OCRv4** running in-browser via `onnxruntime-web` + `@gutenye/ocr-browser`
   (`src/lib/ocr-paddle.ts`). Tolerant range-based parser in `src/lib/parse-reading.ts`.
@@ -90,16 +93,21 @@ Built and **verified live in the browser**:
 17 real Weishi photos are in `Timegrapher training images/` — the ground-truth OCR test set.
 
 ## 7. Weak Points / Risks / Tech Debt (honest)
-- **Data loss (CRITICAL):** data is in `localStorage` only; phone browsers can evict it. → Milestone B
-  (export/import + IndexedDB).
-- **Not yet offline:** OCR models fetch on first use; no service worker. → Milestone D.
-- **Dev friction:** webpack dev (no Turbopack) is slow and occasionally throws a cold-start
-  `ChunkLoadError` (a reload clears it). The **production build is fine**.
-- **Weight:** ~26 MB wasm + ~15 MB models downloaded on first use (cached afterwards).
-- **No tests** at any level.
-- **Dead code:** unused Tesseract path (`src/lib/ocr.ts`) and the old Gemini/Genkit layer
-  (`src/ai/`, `src/app/actions.ts`) still present.
-- **Stale docs:** `Handover.md` (and historically `CLAUDE.md`) describe the old Gemini/cloud design.
+- ~~**Data loss (CRITICAL)**~~ **Resolved 2026-07-12** by Milestone B: IndexedDB primary + localStorage
+  mirror + JSON export/import. Residual: iOS can still evict all site storage — export remains the true
+  safety net (onboarding should tell users to back up).
+- ~~**Not yet offline**~~ **Resolved 2026-07-13** by Milestone D: service worker precaches the whole
+  export; verified working with the network fully down.
+- **Dev friction:** webpack dev (no Turbopack) is slow and occasionally starts 404-ing its own
+  chunks (blank page) — kill it, delete `.next/`, restart. The **production build is fine**.
+- **Weight:** ~13 MB wasm + ~15 MB models, all precached on install (was ~26 MB wasm; plain
+  variant dropped 2026-07-13).
+- ~~**No tests**~~ **Partly resolved 2026-07-13:** 10 Vitest smoke tests over the OCR parser and
+  store/backup logic. Still no component/E2E tests.
+- ~~**Dead code**~~ **Resolved 2026-07-13:** Tesseract path, Genkit/Gemini layer, and their deps
+  deleted.
+- ~~**Stale docs**~~ **Resolved 2026-07-13:** `CLAUDE.md` rewritten. `Handover.md`/`BUILD-PLAN.md`
+  remain historical — this file supersedes them.
 - **iOS PWA limits:** install is Safari-only and storage can be evicted — matters when sharing widely.
 - **OCR residual:** the rate +/− sign is occasionally missed (Review + the amber cue catch it).
 - **Parked sibling:** `../timegrapher-mobile` (Expo/native) is on hold — keep or retire (see §10).
@@ -110,21 +118,41 @@ first even though A appears earlier, because losing a watchmaker's history is th
 (camera capture) is small; slot it in right after B. Then C–F in sequence. Build each to its DoD before
 moving on.
 
-- **A — Trustworthy capture** _(mostly done)._ Remaining: in-app **camera capture** (phone camera, keep
-  gallery as fallback). **DoD:** take a photo in-app on a phone and it flows into Review.
-- **B — Don't lose data (CRITICAL).** Move persistence to **IndexedDB**; add **Export** (download a JSON
-  backup of all watches) and **Import** (restore). **DoD:** export a backup, clear storage, import →
-  every watch and dated table is restored; verified end-to-end.
-- **C — Share the result.** Generate a **PDF/image** of a readings table and of a comparison, shared via
-  the native share sheet. **DoD:** from a watch, produce a shareable PDF that opens correctly.
-- **D — Installable & offline.** Web **manifest** + app **icons** + **service worker** caching the app
-  shell and OCR models/wasm; static export. **DoD:** "Add to Home Screen" on a phone; disable the
-  network; capture → review → save still works fully offline.
-- **E — Ready for others.** First-run **onboarding/help** (how to frame the photo, the 6-position order,
-  review tips); friendly empty states; a shareable **install link**. **DoD:** a watchmaker who has never
-  seen the app can install it and log a watch without help.
-- **F — Cleanup & confidence.** Remove dead Tesseract/Genkit code; trim OCR download weight; add a couple
-  of smoke tests; refresh docs. **DoD:** clean build, no dead OCR/AI code, docs accurate.
+- **A — Trustworthy capture. ✅ DONE 2026-07-12.** In-app **camera capture** added: a "Take photo"
+  button backed by `<input capture="environment">` opens the phone's rear camera directly (gallery
+  upload kept). **DoD met:** a photo fed through the camera input flows preview → OCR → Review with
+  correct values (verified live with a real Weishi photo; extraction exact). _Residual: spot-check
+  once on a physical phone that the OS camera opens._
+- **B — Don't lose data (CRITICAL). ✅ DONE 2026-07-12.** Persistence moved to **IndexedDB**; **Export**
+  (JSON backup download) and **Import** (merge-restore) added. **DoD met:** exported a backup, wiped
+  IndexedDB + localStorage, imported → watch, table, and every reading value restored; verified live
+  end-to-end (plus: legacy-localStorage migration, idempotent re-import, bad-file rejection).
+- **C — Share the result. ✅ DONE 2026-07-12.** `src/lib/report.ts` (jsPDF + autotable, fully offline)
+  builds a readings-table PDF and a progress-comparison PDF (all three metrics); shared via
+  `navigator.share({files})` where supported, else downloaded. Buttons: "Share PDF" per dated table in
+  the watch timeline, "Share comparison PDF" in the compare view. **DoD met:** both PDFs generated from
+  a watch via the real buttons and verified valid (correct header, watch name/ref, all rows).
+- **D — Installable & offline. ✅ DONE 2026-07-13.** Static export (`output: 'export'`); web manifest +
+  generated icons; service worker with a **build-time precache manifest** (postbuild
+  `scripts/build-sw-precache.mjs` injects the full export file list — 56 files incl. every lazy JS
+  chunk, OCR models, wasm, self-hosted font — into `out/sw.js` with a content-hashed cache name).
+  Google Fonts replaced with self-hosted `next/font` Inter. **DoD met:** with the server killed, the
+  app reloads from cache and the full capture → OCR → review → save flow works — verified live, OCR
+  extracted exact values offline. _Residual: "Add to Home Screen" needs an HTTPS host + a phone —
+  spot-check after deploying (Milestone E's install link)._
+- **E — Ready for others. ✅ Mostly done 2026-07-13.** First-run onboarding dialog
+  (`src/components/onboarding-dialog.tsx`: 6-position order, crop tip, review/save, backup reminder;
+  shows once, reopenable via "Quick-start guide" on the FAQ tab — all verified live). Empty states
+  were already friendly. **Remaining: the shareable install link** — blocked on the §10 hosting
+  decision (GitHub Pages / Vercel / Netlify). The app is a plain static export in `out/`, so any
+  static host works; deploy, then spot-check "Add to Home Screen" on a phone (also closes D's
+  residual).
+- **F — Cleanup & confidence. ✅ DONE 2026-07-13.** Deleted the dead Tesseract path (`src/lib/ocr.ts`),
+  the whole Genkit/Gemini layer (`src/ai/`, `src/app/actions.ts`), and unused deps (genkit×3,
+  genkit-cli, tesseract.js, dotenv, patch-package). Trimmed OCR download ~13 MB (plain wasm variant
+  dropped; runtime uses only the jsep build — re-verified OCR after). Added Vitest with 10 smoke
+  tests over `parse-reading` and `watch-store` (`npm test`, all green). Rewrote `CLAUDE.md` to match
+  reality. **DoD met:** clean build (54-file precache), no dead OCR/AI code, docs accurate.
 
 _Post-v1:_ Capacitor store wrap; live camera with a framing guide; multi-language OCR.
 
@@ -147,3 +175,39 @@ Append dated entries; tick Milestones A–F as they land.
 - **2026-07-07** — Switched OCR engine to PaddleOCR (97% vs 53%); position auto-labelling; lift-angle
   capture; "Batch photos" rename; machine-matched titles. (commit `16b0197`)
 - **2026-07-07** — Authored this Master Plan as the single source of truth.
+- **2026-07-12** — **Milestone B done.** IndexedDB is now the primary store (`src/lib/db.ts` +
+  reworked `src/lib/watch-store.ts`), localStorage kept as a best-effort mirror, one-time migration
+  from old localStorage keys, `navigator.storage.persist()` requested. Export backup (versioned JSON
+  download) and Import backup (merge by name+ref, tables unioned by id — idempotent, never deletes)
+  on the Watches tab. Verified live: save → export → wipe all storage → import → full restore;
+  re-import adds nothing; junk file rejected with a clear error; legacy migration confirmed.
+  Production build green.
+- **2026-07-12** — **Milestone A done.** "Take photo" button (`capture="environment"` input) in the
+  uploader opens the phone camera in-app; photo flows into the existing preview → crop → OCR → Review
+  pipeline. Fixed a live-FileList bug in `handleFilesChange` (snapshot before async reads; also fixes
+  the old oversized-file miscount). Verified live with a real Weishi photo — OCR values exact
+  (+34 / 206 / 2.4 / 52.0). Build green.
+- **2026-07-12** — **Milestone C done.** Added `jspdf` + `jspdf-autotable`; `src/lib/report.ts` builds
+  offline PDF reports (single dated table; full progress comparison across all attempts). Share sheet
+  on phones, download fallback on desktop. Buttons in the watch detail timeline and compare views.
+  Verified live: both PDFs generated through the UI, parsed as valid 1-page/multi-grid PDFs with the
+  right content. Build green.
+- **2026-07-12** — **Milestone D implemented.** Static export enabled (`output: 'export'`,
+  `images.unoptimized`); `public/manifest.webmanifest` + generated app icons (`public/icons/`);
+  `public/sw.js`; production-only registration via `src/components/sw-register.tsx`; Google Fonts
+  replaced with self-hosted `next/font` Inter (offline-safe). Added `npm run serve:static` + a
+  "static" launch config to serve the export locally.
+- **2026-07-13** — **Milestone D done (verified offline).** First offline test caught a real gap:
+  the OCR engine loads as lazy webpack chunks that weren't precached, so OCR failed offline. Fixed
+  with a build-time precache manifest (`scripts/build-sw-precache.mjs`, postbuild): the whole
+  export (56 files) is precached under a content-hashed cache name; old caches auto-deleted.
+  Verified with the server killed: page reload works, and capture → OCR → review → save completes
+  offline with exact values. Test data cleaned up.
+- **2026-07-13** — **Milestone E mostly done.** First-run onboarding dialog (photo order, crop tip,
+  review/save, backup reminder); shows once, reopenable via "Quick-start guide" on the FAQ tab.
+  Verified live (first-run → dismiss → no re-show → reopen). Remaining: install link (hosting
+  decision, §10).
+- **2026-07-13** — **Milestone F done.** Dead Tesseract/Genkit code and 7 unused deps removed;
+  OCR download trimmed ~13 MB (jsep-only wasm, re-verified); Vitest added with 10 passing smoke
+  tests (`npm test`); `CLAUDE.md` rewritten to match the current app. Build green, 54-file
+  precache.

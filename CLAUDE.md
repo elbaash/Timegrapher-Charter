@@ -1,24 +1,18 @@
-# ChronoGrapher Professional — CLAUDE.md
+# ChronoGrapher — CLAUDE.md
 
 > ## 📌 Source of truth: [`MASTER-PLAN.md`](MASTER-PLAN.md)
-> Read **`MASTER-PLAN.md`** first — it holds the current purpose, goals, architecture, current state,
-> risks, and the roadmap (what to build next). It supersedes this file, `BUILD-PLAN.md`, and
-> `Handover.md` wherever they disagree. The notes below are kept for code-navigation detail but are
-> **partly stale** (see the correction directly below).
-
-> **⚠️ What changed since this file was written (as of 2026-07-07):** OCR no longer uses Gemini/cloud —
-> it runs **PaddleOCR in-browser** (`src/lib/ocr-paddle.ts`), fully offline. The data model is now
-> **Watch → dated ReadingsTable → readings** (not one-off "customer sessions"), with a per-watch
-> timeline and a progress-comparison view. The direction is an **installable offline PWA**, free, for
-> watchmakers to share. The Firebase layer was removed. The sibling Expo project (`../timegrapher-mobile/`)
-> is **parked**. Treat statements about Gemini/Genkit, Firebase, and "customer sessions" below as history.
+> Read **`MASTER-PLAN.md`** first — purpose, goals, architecture, current state, risks, roadmap, and
+> a dated changelog. It supersedes this file, `BUILD-PLAN.md`, and `Handover.md` wherever they
+> disagree. This file is code-navigation detail only. _(Refreshed 2026-07-13 — the old Gemini/
+> Firebase/customer-session notes are gone; that design no longer exists.)_
 
 ## What This App Does
 
-A single-page app for watchmakers. It OCRs photos of a **Weishi Timegrapher** display **on-device**
-(PaddleOCR in the browser — no cloud, no API key) to extract Rate (s/d), Amplitude (°), Beat Error (ms),
-Lift Angle (°), and Position. Readings are reviewed by a human, then saved as **dated tables under a
-named watch**, so the watchmaker can regulate over several passes, compare progress, and share a report.
+A **free, offline, installable PWA** for watchmakers. It OCRs photos of a **Weishi Timegrapher**
+display **on-device** (PaddleOCR in the browser — no cloud, no API key) to extract Rate (s/d),
+Amplitude (°), Beat Error (ms), and Lift Angle (°). Readings are human-reviewed, then saved as
+**dated tables under a named watch**, so the watchmaker can regulate over several passes, compare
+progress across attempts, back up/restore everything as JSON, and share PDF reports.
 
 ---
 
@@ -26,14 +20,16 @@ named watch**, so the watchmaker can regulate over several passes, compare progr
 
 | Layer | Technology |
 |-------|-----------|
-| Framework | Next.js 15.5.20, App Router, Turbopack |
-| Language | TypeScript 5, strict mode — build errors **enforced** (`next.config.ts` checks re-enabled 2026-07-05) |
-| AI | Genkit v1.20 + `@genkit-ai/google-genai` → `googleai/gemini-2.5-flash` |
-| UI | React 18, Tailwind CSS 3.4, ShadCN/Radix UI, Lucide React |
-| Backend | None — Firebase scaffolding **removed 2026-07-05** (was inert; see below) |
-| Forms | react-hook-form + Zod |
-| Dates | date-fns |
-| Persistence | localStorage only |
+| Framework | Next.js 15 (App Router), **static export** (`output: 'export'` → `out/`) |
+| Dev bundler | **webpack** (`next dev`; Turbopack dropped so onnxruntime-web/opencv bundle) |
+| Language | TypeScript 5 strict; build errors enforced |
+| OCR | PaddleOCR PP-OCRv4 in-browser via `onnxruntime-web` + `@gutenye/ocr-browser` |
+| UI | React 18, Tailwind CSS 3.4, ShadCN/Radix, Lucide; `next/font` Inter (self-hosted) |
+| PDF reports | `jspdf` + `jspdf-autotable`, fully offline |
+| Persistence | **IndexedDB** primary + localStorage mirror (`src/lib/watch-store.ts`, `src/lib/db.ts`) |
+| Offline | Service worker (`public/sw.js`) with build-time precache manifest |
+| Tests | Vitest (`npm test`) — smoke tests for the OCR parser and store logic |
+| Backend / AI cloud | **None.** Firebase removed 2026-07-05; Genkit/Gemini removed 2026-07-13 |
 
 ---
 
@@ -43,94 +39,70 @@ named watch**, so the watchmaker can regulate over several passes, compare progr
 src/
 ├── app/
 │   ├── page.tsx          # Main SPA — all tabs, all state, all handlers
-│   ├── layout.tsx        # Root layout — Toaster only (Firebase provider removed)
-│   ├── actions.ts        # Server action: analyzeImage() → calls Genkit flow
-│   └── globals.css
-├── ai/
-│   ├── genkit.ts         # Genkit init, model = googleai/gemini-2.5-flash
-│   ├── dev.ts            # Entry for `npm run genkit:dev` (Genkit UI on port 4000)
-│   └── flows/
-│       ├── extract-timegrapher-data.ts   # Primary AI flow (active)
-│       └── improve-ocr-accuracy.ts       # Secondary flow (defined, NOT integrated)
+│   ├── layout.tsx        # Root layout — metadata/manifest, font, Toaster, SW registration
+│   └── globals.css       # incl. @media print styles
 ├── components/
-│   ├── uploader.tsx           # Drag-and-drop batch upload (max 6 images, 4 MB each)
+│   ├── uploader.tsx           # Batch upload + "Take photo" camera capture + crop-to-display
+│   ├── onboarding-dialog.tsx  # First-run quick-start guide (reopenable from FAQ tab)
 │   ├── manual-entry-form.tsx  # Zod-validated fallback entry
-│   ├── readings-table.tsx     # Data table + print/share/archive actions
-│   ├── app-header.tsx
-│   ├── faq.tsx
-│   └── ui/                    # ShadCN primitives (button, card, input, table, etc.)
-├── hooks/
-│   ├── use-toast.ts
-│   └── use-mobile.tsx
+│   ├── readings-table.tsx     # Active-session table + print/share/save actions
+│   ├── readings-view.tsx      # Read-only table used in the watch timeline
+│   ├── watch-compare.tsx      # Progress grid: position × every attempt, per metric
+│   ├── sw-register.tsx        # Registers /sw.js (production only)
+│   ├── app-header.tsx / faq.tsx
+│   └── ui/                    # ShadCN primitives
 ├── lib/
-│   └── utils.ts               # cn() for conditional class merging
-└── types/index.ts             # POSITIONS const, Position, TimegrapherReading, CustomerSession, etc.
+│   ├── ocr-paddle.ts     # In-browser PaddleOCR engine (rotation retry for upside-down shots)
+│   ├── parse-reading.ts  # Tolerant range-based parser for the OCR text  [tested]
+│   ├── watch-store.ts    # Load/save/merge/backup of the watch archive   [tested]
+│   ├── db.ts             # Minimal IndexedDB promise wrapper (single kv store)
+│   ├── report.ts         # jsPDF report builders + share-sheet/download
+│   └── utils.ts          # cn()
+├── hooks/                # use-toast, use-mobile
+└── types/index.ts        # POSITIONS, TimegrapherReading, ReadingsTable, Watch, Backup shapes
 
-# Removed 2026-07-05: src/firebase/ (inert Firebase layer), src/components/FirebaseErrorListener.tsx,
-# src/lib/placeholder-images.ts (unused), src/components/ui/chart.tsx (+ recharts dep, unused).
+scripts/
+├── setup-ocr-assets.mjs      # Copies ONNX models + wasm into public/ (postinstall/predev/prebuild)
+└── build-sw-precache.mjs     # postbuild: injects full out/ file list into out/sw.js (offline)
+
+public/
+├── manifest.webmanifest, icons/, sw.js (template — see build-sw-precache)
+└── models/, ort/             # git-ignored, regenerated from node_modules
+
+Timegrapher training images/  # 17 real Weishi photos — the ground-truth OCR test set
 ```
-
----
-
-## Entry Points
-
-- **`src/app/page.tsx`** — the entire app. Manages all state, tab navigation, localStorage sync, and handlers.
-- **`src/app/actions.ts`** — `analyzeImage(photoDataUri)` server action. Returns `{ data, error }`.
-- **`src/ai/flows/extract-timegrapher-data.ts`** — Gemini prompt + Zod output schema.
-- **`src/app/layout.tsx`** — root layout; renders children + Toaster (no backend provider).
 
 ---
 
 ## Key Conventions
 
-### State & Persistence
-- All app state lives in `page.tsx` and is passed down via props.
-- `isHydrated` guard prevents SSR/client mismatch before localStorage loads.
-- Two localStorage keys:
-  - `"chronoCurrentSession"` — volatile workspace (readings, customerName, refNumber, sessionId)
-  - `"chronoSessions"` — persistent archive array of `CustomerSession[]`
-
-### Types
-- All shared types are in `src/types/index.ts` — add new ones there.
-- `POSITIONS` is a `const` array used for both the Zod enum in the AI flow and the UI `<Select>`.
-- All measurement values (rate, amplitude, beatError, liftAngle) are stored as **strings**, not numbers.
-
-### AI Flows
-- Flows live in `src/ai/flows/`. Each flow exports an `async function` wrapper around `ai.defineFlow()`.
-- Input/output schemas use Zod, exported as TypeScript types via `z.infer<>`.
-- The server action in `actions.ts` is the only caller of flows from the UI layer.
-
-### Components
-- ShadCN primitives live in `src/components/ui/` — do not hand-edit these unless necessary.
-- Feature components (uploader, form, table) receive callbacks from `page.tsx` via props — they own no global state.
-- CSS class composition uses `cn()` from `src/lib/utils.ts` (clsx + tailwind-merge).
-
-### Styling
-- Dark mode enabled globally via `class` strategy in `tailwind.config.ts`.
-- Print styles for the Regulation Certificate are in `globals.css` under `@media print`.
-- Responsive breakpoints follow Tailwind defaults; `md:` is the primary breakpoint used.
-
----
+- All app state lives in `page.tsx`, passed down via props; `isHydrated` guards the async
+  IndexedDB load before first render.
+- Storage: IndexedDB `chronographer/kv/watches` is primary; localStorage `chronoWatches` is a
+  best-effort mirror and one-time migration source; `chronoCurrentSession` holds the volatile
+  workspace; `chronoOnboarded` gates the first-run dialog.
+- All measurement values are stored as **strings**.
+- `POSITIONS` in `src/types/index.ts` drives every position dropdown; photos are auto-labelled in
+  the machine's printed order (Dial Down → Crown Up → Down → Left → Right → Dial Up).
+- Backup files are a versioned envelope (`{app, schema, exportedAt, watches}`); import **merges**
+  (by name+ref, tables unioned by id) and never deletes.
 
 ## Dev Scripts
 
 ```bash
-npm run dev           # Next.js dev server (Turbopack)
-npm run genkit:dev    # Genkit UI at http://localhost:4000 (for testing AI flows)
-npm run build         # Production build
-npm run typecheck     # tsc --noEmit (run this before shipping)
-npm run lint          # ESLint
+npm run dev           # dev server (webpack; SW deliberately NOT registered in dev)
+npm run build         # static export to out/ + SW precache injection (postbuild)
+npm run serve:static  # build then serve out/ on :5001 — use this to test the PWA/offline
+npm test              # vitest smoke tests
+npm run typecheck     # tsc --noEmit — run before shipping
 ```
 
----
+## Gotchas
 
-## Known Issues / Incomplete Work
-
-| Item | Status | Notes |
-|------|--------|-------|
-| Firebase (Firestore/Auth) | **Removed 2026-07-05** | Entire inert `src/firebase/` layer, provider, rules, and config deleted. App is localStorage-only by design |
-| `improve-ocr-accuracy.ts` | Dead code | Flow defined, never called — intended as OCR retry fallback. Resolve or delete |
-| `placeholder-images.ts` / `ui/chart.tsx` / recharts | **Removed 2026-07-05** | All unused; deleted along with the `recharts` dependency |
-| Build errors suppressed | **Fixed 2026-07-05** | `ignoreBuildErrors`/`ignoreDuringBuilds` back to `false`; `npm run build` passes with checks on |
-| `liftAngle` field | Inconsistent | Always defaults to "52", not extracted by OCR; AI path now stamps it in `uploader.tsx`, else print view only |
-| No tests | Gap | Zero unit, integration, or E2E tests in the repo |
+- **Dev-server flakiness:** `next dev` (webpack) occasionally starts 404-ing its own chunks →
+  blank page. Fix: kill it, delete `.next/`, restart. The production build is unaffected.
+- The SW precache manifest is injected **into `out/sw.js` only** — `public/sw.js` keeps the
+  `__PRECACHE_MANIFEST__` placeholder. Never hand-edit `out/`.
+- OCR assets (~40 MB) are git-ignored and regenerated by `scripts/setup-ocr-assets.mjs`.
+- Testing in the browser pane: never click controls that trigger real downloads/print dialogs —
+  stub `URL.createObjectURL` / anchor clicks and inspect the blob instead.

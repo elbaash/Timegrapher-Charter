@@ -1,10 +1,29 @@
-import type {Metadata} from 'next';
+import type {Metadata, Viewport} from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
+import { SwRegister } from "@/components/sw-register";
+
+// Self-hosted at build time by next/font — no network needed at runtime (offline PWA).
+const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
 export const metadata: Metadata = {
   title: 'ChronoGrapher',
-  description: 'A watch regulator recording app using AI-powered OCR.',
+  description: 'Photograph a Weishi timegrapher display and keep a dated regulation history per watch — fully offline.',
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: '/icons/icon-192.png',
+    apple: '/icons/icon-192.png',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'ChronoGrapher',
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#0c0a09',
 };
 
 export default function RootLayout({
@@ -14,14 +33,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-      </head>
-      <body className="font-body antialiased">
+      <body className={`${inter.className} font-body antialiased`}>
         {children}
         <Toaster />
+        <SwRegister />
       </body>
     </html>
   );

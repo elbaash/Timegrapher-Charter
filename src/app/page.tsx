@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AppHeader } from "@/components/app-header";
 import { Uploader } from "@/components/uploader";
 import { ReadingsTable } from "@/components/readings-table";
@@ -8,12 +8,15 @@ import { ReadingsView } from "@/components/readings-view";
 import { WatchCompare } from "@/components/watch-compare";
 import { ManualEntryForm } from "@/components/manual-entry-form";
 import { Faq } from "@/components/faq";
+import { OnboardingDialog } from "@/components/onboarding-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TimegrapherReading, AnalyzedImage, TimegrapherReadingData, Position, POSITIONS, Watch } from "@/types";
-import { loadWatches, saveWatches, addTableToWatches } from "@/lib/watch-store";
-import { Trash2, FilePlus, ChevronRight, ChevronLeft, Check, X, Watch as WatchIcon, HelpCircle, PlusCircle } from "lucide-react";
+import { loadWatches, saveWatches, addTableToWatches, buildBackup, parseBackup, mergeWatches, requestPersistentStorage } from "@/lib/watch-store";
+import { Trash2, FilePlus, ChevronRight, ChevronLeft, Check, X, Watch as WatchIcon, HelpCircle, PlusCircle, Download, Upload, FileText } from "lucide-react";
+import { buildTablePdf, buildComparisonPdf, sharePdf, reportFilename } from "@/lib/report";
+import type { ReadingsTable as ReadingsTableType } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -33,29 +36,39 @@ export default function Home() {
   const [selectedWatchId, setSelectedWatchId] = useState<string | null>(null);
   const [detailView, setDetailView] = useState<"timeline" | "compare">("timeline");
   const [isHydrated, setIsHydrated] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const { toast } = useToast();
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    try {
-      setWatches(loadWatches());
-      const storedWorkspace = localStorage.getItem("chronoCurrentSession");
-      if (storedWorkspace) {
-        const { readings, customerName, refNumber } = JSON.parse(storedWorkspace);
-        setActiveReadings(readings || []);
-        setActiveName(customerName || "");
-        setActiveRefNumber(refNumber || "");
+    let cancelled = false;
+    (async () => {
+      try {
+        const stored = await loadWatches();
+        if (cancelled) return;
+        setWatches(stored);
+        const storedWorkspace = localStorage.getItem("chronoCurrentSession");
+        if (storedWorkspace) {
+          const { readings, customerName, refNumber } = JSON.parse(storedWorkspace);
+          setActiveReadings(readings || []);
+          setActiveName(customerName || "");
+          setActiveRefNumber(refNumber || "");
+        }
+        if (!localStorage.getItem("chronoOnboarded")) setShowOnboarding(true);
+      } catch (error) {
+        console.error("Failed to load stored state", error);
+      } finally {
+        if (!cancelled) setIsHydrated(true);
       }
-    } catch (error) {
-      console.error("Failed to load state from localStorage", error);
-    } finally {
-      setIsHydrated(true);
-    }
+    })();
+    requestPersistentStorage();
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
     if (!isHydrated) return;
-    saveWatches(watches);
+    void saveWatches(watches);
   }, [watches, isHydrated]);
 
   useEffect(() => {
@@ -143,6 +156,61 @@ export default function Home() {
     setWatches(prev => prev.filter(w => w.id !== watchId));
     if (selectedWatchId === watchId) setSelectedWatchId(null);
     toast({ variant: "destructive", title: "Watch Deleted", description: "The watch and its history were removed." });
+  };
+
+  // Download the whole archive as a dated JSON backup file.
+  const handleExportBackup = () => {
+    const blob = new Blob([JSON.stringify(buildBackup(watches), null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `chronographer-backup-${format(new Date(), "yyyy-MM-dd")}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Backup Exported", description: `${watches.length} watch${watches.length === 1 ? "" : "es"} saved to a JSON file.` });
+  };
+
+  // Restore from a backup file: merges into the current archive, never deletes or duplicates.
+  const handleImportBackup = async (file: File) => {
+    try {
+      const imported = parseBackup(JSON.parse(await file.text()));
+      const { merged, addedWatches, addedTables } = mergeWatches(watches, imported);
+      setWatches(merged);
+      toast({
+        title: "Backup Imported",
+        description: addedWatches === 0 && addedTables === 0
+          ? "Everything in that backup is already here — nothing to add."
+          : `Restored ${addedWatches} new watch${addedWatches === 1 ? "" : "es"} and ${addedTables} readings table${addedTables === 1 ? "" : "s"}.`,
+      });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Import Failed", description: e instanceof Error ? e.message : "Could not read that file." });
+    }
+  };
+
+  const handleShareTablePdf = async (watch: Watch, table: ReadingsTableType) => {
+    try {
+      const outcome = await sharePdf(
+        buildTablePdf(watch.name, watch.refNumber, table),
+        reportFilename(watch.name, "readings"),
+        `ChronoGrapher — ${watch.name}`,
+      );
+      toast({ title: outcome === "shared" ? "Report Shared" : "PDF Downloaded", description: "Readings table report generated." });
+    } catch {
+      toast({ variant: "destructive", title: "PDF Failed", description: "Could not generate the report." });
+    }
+  };
+
+  const handleShareComparisonPdf = async (watch: Watch) => {
+    try {
+      const outcome = await sharePdf(
+        buildComparisonPdf(watch),
+        reportFilename(watch.name, "comparison"),
+        `ChronoGrapher — ${watch.name} progress`,
+      );
+      toast({ title: outcome === "shared" ? "Report Shared" : "PDF Downloaded", description: "Progress comparison report generated." });
+    } catch {
+      toast({ variant: "destructive", title: "PDF Failed", description: "Could not generate the report." });
+    }
   };
 
   if (!isHydrated) return null;
@@ -298,7 +366,14 @@ export default function Home() {
                     </div>
 
                     {detailView === "compare" ? (
-                      <WatchCompare watch={selectedWatch} />
+                      <div className="space-y-4">
+                        <WatchCompare watch={selectedWatch} />
+                        {selectedWatch.tables.length >= 2 && (
+                          <Button variant="outline" size="sm" onClick={() => handleShareComparisonPdf(selectedWatch)}>
+                            <FileText className="mr-2 h-4 w-4" /> Share comparison PDF
+                          </Button>
+                        )}
+                      </div>
                     ) : (
                       <div className="space-y-6">
                         {selectedWatch.tables.map((table) => (
@@ -306,6 +381,9 @@ export default function Home() {
                             <div className="flex items-center gap-2 text-sm font-medium">
                               <span className="text-muted-foreground">{format(new Date(table.createdAt), "PPp")}</span>
                               <span className="text-xs text-muted-foreground">— {table.readings.length} reading{table.readings.length === 1 ? '' : 's'}</span>
+                              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs ml-auto" onClick={() => handleShareTablePdf(selectedWatch, table)}>
+                                <FileText className="mr-1 h-3 w-3" /> Share PDF
+                              </Button>
                             </div>
                             <ReadingsView readings={table.readings} />
                           </div>
@@ -324,7 +402,22 @@ export default function Home() {
                       <CardTitle>Watches</CardTitle>
                       <CardDescription>Every watch you&apos;ve recorded, with its history of readings.</CardDescription>
                     </div>
-                    <Button variant="outline" size="sm" onClick={handleClearWorkspace}><FilePlus className="mr-2 h-4 w-4" /> New Watch</Button>
+                    <div className="flex flex-wrap gap-2 justify-end">
+                      <Button variant="outline" size="sm" onClick={handleExportBackup} disabled={watches.length === 0}><Download className="mr-2 h-4 w-4" /> Export backup</Button>
+                      <Button variant="outline" size="sm" onClick={() => importInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" /> Import backup</Button>
+                      <input
+                        ref={importInputRef}
+                        type="file"
+                        accept="application/json,.json"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) void handleImportBackup(file);
+                          e.target.value = ""; // allow re-importing the same file
+                        }}
+                      />
+                      <Button variant="outline" size="sm" onClick={handleClearWorkspace}><FilePlus className="mr-2 h-4 w-4" /> New Watch</Button>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="rounded-md border bg-background">
@@ -372,9 +465,14 @@ export default function Home() {
 
             <TabsContent value="faq">
               <Card>
-                <CardHeader>
-                  <CardTitle>Operator Knowledge Base</CardTitle>
-                  <CardDescription>Technical documentation for the Weishi Timegrapher No. 1000.</CardDescription>
+                <CardHeader className="flex flex-row items-start justify-between space-y-0">
+                  <div>
+                    <CardTitle>Operator Knowledge Base</CardTitle>
+                    <CardDescription>Technical documentation for the Weishi Timegrapher No. 1000.</CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setShowOnboarding(true)}>
+                    <HelpCircle className="mr-2 h-4 w-4" /> Quick-start guide
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   <Faq />
@@ -384,6 +482,13 @@ export default function Home() {
           </div>
         </Tabs>
       </main>
+      <OnboardingDialog
+        open={showOnboarding}
+        onClose={() => {
+          setShowOnboarding(false);
+          try { localStorage.setItem("chronoOnboarded", "1"); } catch {}
+        }}
+      />
     </div>
   );
 }

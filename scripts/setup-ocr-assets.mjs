@@ -9,12 +9,11 @@ const FILES = [
   ["node_modules/@gutenye/ocr-models/assets/ch_PP-OCRv4_det_infer.onnx", "public/models/ch_PP-OCRv4_det_infer.onnx"],
   ["node_modules/@gutenye/ocr-models/assets/ch_PP-OCRv4_rec_infer.onnx", "public/models/ch_PP-OCRv4_rec_infer.onnx"],
   ["node_modules/@gutenye/ocr-models/assets/ppocr_keys_v1.txt", "public/models/ppocr_keys_v1.txt"],
-  // onnxruntime-web's default build loads the "jsep" wasm at runtime (confirmed via network); include
-  // the plain variant too so we're robust to version differences. (asyncify/jspi are not used.)
+  // onnxruntime-web's default build loads the "jsep" wasm at runtime (confirmed via network logs,
+  // incl. the full offline PWA test 2026-07-13). The plain variant was dropped to trim ~13 MB off
+  // the offline download; if an onnxruntime-web upgrade changes which file it loads, re-add it here.
   ["node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.jsep.wasm", "public/ort/ort-wasm-simd-threaded.jsep.wasm"],
   ["node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.jsep.mjs", "public/ort/ort-wasm-simd-threaded.jsep.mjs"],
-  ["node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.wasm", "public/ort/ort-wasm-simd-threaded.wasm"],
-  ["node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.mjs", "public/ort/ort-wasm-simd-threaded.mjs"],
 ];
 
 let copied = 0;

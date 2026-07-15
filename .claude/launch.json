@@ -7,6 +7,12 @@
       "runtimeArgs": ["run", "dev"],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "static",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "serve:static"],
+      "port": 5001
     }
   ]
 }

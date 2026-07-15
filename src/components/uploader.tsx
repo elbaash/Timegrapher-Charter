@@ -5,7 +5,7 @@ import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { runPaddleOcr } from "@/lib/ocr-paddle";
-import { UploadCloud, X, LoaderCircle, CheckCircle, Image as ImageIcon, Trash2, Crop as CropIcon } from "lucide-react";
+import { UploadCloud, X, LoaderCircle, CheckCircle, Image as ImageIcon, Trash2, Crop as CropIcon, Camera } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -65,45 +65,49 @@ export function Uploader({ onDataExtracted, isProcessing, setProcessing }: Uploa
   const lastCropRef = useRef<{ crop: { x: number; y: number }; zoom: number } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const handleFilesChange = (selectedFiles: FileList | null) => {
-    if (selectedFiles) {
-      const newFilePreviews: FilePreview[] = [];
-      const currentFileCount = files.length;
-      if (currentFileCount + selectedFiles.length > 6) {
+    if (!selectedFiles) return;
+    // Snapshot immediately — a FileList from an <input> is live and empties if the input is reset.
+    const accepted = Array.from(selectedFiles).filter(file => {
+      if (file.size > 4 * 1024 * 1024) { // 4MB limit
         toast({
           variant: "destructive",
-          title: "Too many files",
-          description: "You can upload a maximum of 6 images.",
+          title: "File too large",
+          description: `${file.name} is larger than 4MB.`,
         });
-        return;
+        return false;
       }
-
-      Array.from(selectedFiles).forEach(file => {
-        if (file.size > 4 * 1024 * 1024) { // 4MB limit
-          toast({
-            variant: "destructive",
-            title: "File too large",
-            description: `${file.name} is larger than 4MB.`,
-          });
-          return;
-        }
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          newFilePreviews.push({ file, previewUrl: reader.result as string });
-          // Check if all files have been read
-          if (newFilePreviews.length === selectedFiles.length) {
-            setFiles(prev => [...prev, ...newFilePreviews]);
-          }
-        };
-        reader.readAsDataURL(file);
+      return true;
+    });
+    if (accepted.length === 0) return;
+    if (files.length + accepted.length > 6) {
+      toast({
+        variant: "destructive",
+        title: "Too many files",
+        description: "You can upload a maximum of 6 images.",
       });
+      return;
     }
+
+    const newFilePreviews: FilePreview[] = [];
+    accepted.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        newFilePreviews.push({ file, previewUrl: reader.result as string });
+        if (newFilePreviews.length === accepted.length) {
+          setFiles(prev => [...prev, ...newFilePreviews]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
   };
   
   const onFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleFilesChange(e.target.files);
+    e.target.value = ""; // so picking/taking the same photo again still fires change
   };
 
   const removeFile = (index: number) => {
@@ -330,6 +334,25 @@ export function Uploader({ onDataExtracted, isProcessing, setProcessing }: Uploa
           disabled={isProcessing || files.length >= 6}
           multiple
         />
+       {/* capture="environment" opens the phone's rear camera directly; on desktop it's a normal picker */}
+       <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={onFileInputChange}
+          disabled={isProcessing || files.length >= 6}
+        />
+
+      <Button
+        variant="secondary"
+        className="w-full max-w-lg"
+        onClick={() => cameraInputRef.current?.click()}
+        disabled={isProcessing || files.length >= 6}
+      >
+        <Camera className="mr-2 h-4 w-4" /> Take photo
+      </Button>
 
       {files.length > 0 && (
         <p className="w-full max-w-lg text-xs text-muted-foreground -mt-2">
