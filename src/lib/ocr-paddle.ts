@@ -31,12 +31,12 @@ async function getEngine(): Promise<OcrEngine> {
       ]);
       // Single-threaded avoids needing COOP/COEP cross-origin-isolation headers.
       ort.env.wasm.numThreads = 1;
-      ort.env.wasm.wasmPaths = "/ort/";
+      ort.env.wasm.wasmPaths = "/Timegrapher-Charter/ort/";
       return (await Ocr.create({
         models: {
-          detectionPath: "/models/ch_PP-OCRv4_det_infer.onnx",
-          recognitionPath: "/models/ch_PP-OCRv4_rec_infer.onnx",
-          dictionaryPath: "/models/ppocr_keys_v1.txt",
+          detectionPath: "/Timegrapher-Charter/models/ch_PP-OCRv4_det_infer.onnx",
+          recognitionPath: "/Timegrapher-Charter/models/ch_PP-OCRv4_rec_infer.onnx",
+          dictionaryPath: "/Timegrapher-Charter/models/ppocr_keys_v1.txt",
         },
       })) as unknown as OcrEngine;
     })();

@@ -1,12 +1,17 @@
 // Injects the full static-export file list into the service worker's precache manifest.
 // Runs postbuild: scans out/, replaces the __PRECACHE_MANIFEST__ placeholder in out/sw.js, and
 // stamps the cache name with a content hash so a new build invalidates the old cache.
+//
+// GitHub Pages serves the app under https://<user>.github.io/Timegrapher-Charter/, so every
+// precached URL is prefixed with /Timegrapher-Charter to match the routes Next.js emits when
+// basePath/assetPrefix are set (see next.config.ts).
 
 import { readdirSync, readFileSync, writeFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { createHash } from "node:crypto";
 
 const OUT = "out";
+const BASE = "/Timegrapher-Charter";
 
 function walk(dir) {
   const files = [];
@@ -20,13 +25,15 @@ function walk(dir) {
 
 const urls = walk(OUT)
   .map((p) => "/" + relative(OUT, p).replaceAll("\\", "/"))
-  .filter((u) => u !== "/sw.js" && !u.endsWith(".txt.gz"))
+  .filter((u) => u !== "/index.html" && u !== "/sw.js" && !u.endsWith(".txt.gz"))
   .map((u) => {
-    if (u === "/index.html") return "/";
-    if (u.endsWith(".html")) return u.slice(0, -".html".length);
-    return u;
+    const path = u.endsWith(".html") ? u.slice(0, -".html".length) : u;
+    return BASE + path;
   })
   .sort();
+
+// The app shell is the sub-path root.
+urls.unshift(BASE + "/");
 
 const swPath = join(OUT, "sw.js");
 let sw = readFileSync(swPath, "utf8");

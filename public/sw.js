@@ -35,10 +35,10 @@ self.addEventListener("fetch", (event) => {
       fetch(request)
         .then((res) => {
           const copy = res.clone();
-          caches.open(CACHE).then((cache) => cache.put("/", copy));
+          caches.open(CACHE).then((cache) => cache.put("/Timegrapher-Charter/", copy));
           return res;
         })
-        .catch(() => caches.match("/")),
+        .catch(() => caches.match("/Timegrapher-Charter/")),
     );
     return;
   }

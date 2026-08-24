@@ -10,7 +10,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "setup:ocr": "node scripts/setup-ocr-assets.mjs",
-    "serve:static": "npm run build && npx --yes serve out -l 5001",
+    "serve:static": "npm run build && node scripts/serve-static.mjs",
     "postinstall": "node scripts/setup-ocr-assets.mjs",
     "predev": "node scripts/setup-ocr-assets.mjs",
     "prebuild": "node scripts/setup-ocr-assets.mjs",

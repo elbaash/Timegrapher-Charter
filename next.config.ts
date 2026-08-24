@@ -1,8 +1,15 @@
 import type {NextConfig} from 'next';
 
+// GitHub Pages project site: the app is served under https://<user>.github.io/Timegrapher-Charter/,
+// so all asset and route URLs are prefixed with the repository name. Local serving is handled by
+// scripts/serve-static.mjs, which mounts out/ under the same sub-path.
+const basePath = '/Timegrapher-Charter';
+
 const nextConfig: NextConfig = {
   // Static export — the app is an installable offline PWA served as plain files (no Node server).
   output: 'export',
+  basePath,
+  assetPrefix: `${basePath}/`,
   typescript: {
     ignoreBuildErrors: false,
   },

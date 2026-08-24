@@ -8,7 +8,8 @@ export function SwRegister() {
   useEffect(() => {
     if (process.env.NODE_ENV !== "production") return;
     if (!("serviceWorker" in navigator)) return;
-    navigator.serviceWorker.register("/sw.js").catch((e) => {
+    // Served under the GitHub Pages sub-path (see next.config.ts basePath).
+    navigator.serviceWorker.register("/Timegrapher-Charter/sw.js").catch((e) => {
       console.error("Service worker registration failed", e);
     });
   }, []);

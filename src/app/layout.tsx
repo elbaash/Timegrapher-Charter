@@ -10,10 +10,10 @@ const inter = Inter({ subsets: ['latin'], display: 'swap' });
 export const metadata: Metadata = {
   title: 'ChronoGrapher',
   description: 'Photograph a Weishi timegrapher display and keep a dated regulation history per watch — fully offline.',
-  manifest: '/manifest.webmanifest',
+  manifest: '/Timegrapher-Charter/manifest.webmanifest',
   icons: {
-    icon: '/icons/icon-192.png',
-    apple: '/icons/icon-192.png',
+    icon: '/Timegrapher-Charter/icons/icon-192.png',
+    apple: '/Timegrapher-Charter/icons/icon-192.png',
   },
   appleWebApp: {
     capable: true,
