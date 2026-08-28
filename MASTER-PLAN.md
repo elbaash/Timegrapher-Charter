@@ -3,7 +3,7 @@
 **Single source of truth for this project.** Supersedes `BUILD-PLAN.md` and `Handover.md`;
 `CLAUDE.md` points here. If anything elsewhere disagrees with this file, this file wins.
 
-_Last updated: 2026-08-27._
+_Last updated: 2026-08-28._
 
 > **Reading this cold?** Sections 1–3 tell you what the app is and who it's for. Section 6 is what's
 > already built. Sections 7–8 are what's left and in what order. To pick the next task: go to the
@@ -174,23 +174,43 @@ progress**, **share a PDF**, and **back up / restore** their data — no account
 > installed phones showed a 404 page when taken offline. Sections below fix each layer so it
 > cannot silently recur.
 
-### 11.1 Get the site back online — ✅ DONE 2026-08-27
+### ⏸️ RESUME POINT — session ended 2026-08-28
+
+**State: everything is saved, committed (`d1328c6` on `main`), pushed to GitHub, and LIVE.**
+Working tree clean; nothing pending anywhere. Live site (verified):
+https://elbaash.github.io/Timegrapher-Charter/ — hardened service worker, cache `chronographer-7b5b608d6b`.
+
+**The ONE open item is §11.4's last checkbox — the 2-minute phone re-test:**
+1. On the phone (internet ON), open ChronoGrapher once — it silently downloads the update and re-caches (~30 s).
+2. Airplane mode ON → open the app again → must load normally.
+3. Bonus: photograph a timegrapher display → OCR → save, all offline.
+→ Pass? Tick the box and the recovery is fully closed.
+
+**Next session after that — §11.5 polish, in order:**
+1. Remove duplicate Customer Name / Ref inputs from `uploader.tsx` (legacy; watch name/ref already on the New tab).
+2. Add a Review-step hint when a rate has no +/− sign.
+3. Component/E2E tests; stronger iOS storage-eviction nudges.
+
+**Everyday commands:** `npm run dev` (local dev) · `npm run deploy` (publish to the live site) ·
+`npm run serve:static` (test PWA/offline locally) · `npm test` · `npm run typecheck`.
+
+### 11.1 Get the site back online — ✅ DONE 2026-08-28
 - [x] Repo Settings → Pages → “Deploy from a branch” → `gh-pages` / root (owner action)
 - [x] Verified `https://elbaash.github.io/Timegrapher-Charter/` and `/sw.js` serve HTTP 200
 
-### 11.2 Harden the service worker (never breaks offline again) — ✅ DONE 2026-08-27
+### 11.2 Harden the service worker (never breaks offline again) — ✅ DONE 2026-08-28
 - [x] Removed the stray `what` syntax error at the top of `public/sw.js`
 - [x] Navigation handler rejects non-OK responses — error pages are never cached as the shell
 - [x] Precache is per-file and fault-tolerant (one bad URL can’t abort the ~40 MB install; console warns)
 - [x] Source maps excluded from the precache manifest (weight)
 - [x] Rebuilt, redeployed via `npm run deploy`, live `sw.js` verified
 
-### 11.3 Reliable deployment — ✅ DONE 2026-08-27
+### 11.3 Reliable deployment — ✅ DONE 2026-08-28
 - [x] `npm run deploy` (`scripts/deploy-gh-pages.mjs`): build → replace `gh-pages` content with `out/` → force-push
 - [x] Build artifacts removed from `main` tracking; `.deploy-gh-pages/` git-ignored
 - [x] `main` pushed so GitHub matches the working tree
 
-### 11.4 Phone acceptance (Android) — 🟡 INITIAL PASS 2026-08-27, re-verify after deploy
+### 11.4 Phone acceptance (Android) — 🟡 INITIAL PASS 2026-08-28, re-verify after deploy
 - [x] App installed to home screen from Chrome
 - [x] Airplane-mode test passed: app loads and works offline
 - [ ] After the patched deploy: open the app once online (self-updates the service worker), then re-run the airplane-mode test
@@ -248,7 +268,9 @@ Append dated entries; tick Milestones A–F as they land.
 - **2026-08-24** — GitHub Pages sub-path deploy (`basePath` `/Timegrapher-Charter`, `gh-pages`
   branch). The Pages source setting later lapsed → site 404'd → the deployed service worker cached
   the GitHub 404 page as the app shell (no `res.ok` guard) → installed phones saw a 404 offline.
-- **2026-08-27** — **Recovery (see §11).** Pages re-pointed at `gh-pages` (site live); `sw.js`
-  hardened (non-OK navigations never cached; per-file fault-tolerant precache; stray syntax
-  removed); source maps excluded from precache; added `npm run deploy`; build artifacts removed
-  from `main` + git-ignored; Android install + airplane-mode acceptance test passed.
+- **2026-08-28** — **Recovery complete (see §11 RESUME POINT).** Pages re-pointed at `gh-pages`
+  (site live); `sw.js` hardened (non-OK navigations never cached; per-file fault-tolerant
+  precache; stray syntax removed); source maps excluded from precache; added `npm run deploy`;
+  build artifacts removed from `main` + git-ignored; rebuilt + redeployed + live-verified
+  (commit `d1328c6`, cache `chronographer-7b5b608d6b`); Android install + airplane-mode
+  acceptance test passed. Remaining: §11.4 re-verify on phone, then §11.5 polish.
