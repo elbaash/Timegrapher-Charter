@@ -83,20 +83,15 @@ After running `npm run serve:static`, open [http://localhost:5001](http://localh
 
 The app is a plain static export in `out/`. Any static host works:
 
-### Option 1: GitHub Pages
+### Option 1: GitHub Pages (this repo's live setup)
 
 1. Make the repository **public** (GitHub Pages requires a public repo on the free plan).
-2. Push the `out/` contents to a `gh-pages` branch:
+2. **One-time:** in the repo Settings → Pages, set the source to **“Deploy from a branch” → `gh-pages` → root (`/`)**.
+3. Deploy any time with:
    ```bash
-   git checkout --orphan gh-pages
-   git rm -rf .
-   cp -r out/* .
-   git add .
-   git commit -m "Deploy"
-   git push origin gh-pages
+   npm run deploy   # builds, then pushes out/ to the gh-pages branch (scripts/deploy-gh-pages.mjs)
    ```
-3. In the repo Settings → Pages, set the source to the `gh-pages` branch, root (`/`).
-4. Your app will be live at `https://<username>.github.io/Timegrapher-Charter`.
+4. The app is live at `https://<username>.github.io/Timegrapher-Charter/` a minute or two later. Installed phones pick up the update automatically the next time they open the app online.
 
 ### Option 2: Vercel
 

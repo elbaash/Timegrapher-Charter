@@ -25,7 +25,13 @@ function walk(dir) {
 
 const urls = walk(OUT)
   .map((p) => "/" + relative(OUT, p).replaceAll("\\", "/"))
-  .filter((u) => u !== "/index.html" && u !== "/sw.js" && !u.endsWith(".txt.gz"))
+  .filter(
+    (u) =>
+      u !== "/index.html" &&
+      u !== "/sw.js" &&
+      !u.endsWith(".txt.gz") &&
+      !u.endsWith(".map"), // source maps are dev-only weight (~MBs); skipping keeps the precache small
+  )
   .map((u) => {
     const path = u.endsWith(".html") ? u.slice(0, -".html".length) : u;
     return BASE + path;
@@ -44,6 +50,7 @@ if (!sw.includes("__PRECACHE_MANIFEST__")) {
 const hash = createHash("sha256").update(JSON.stringify(urls)).digest("hex").slice(0, 10);
 sw = sw
   .replace("__CACHE_VERSION__", hash)
-  .replace('["__PRECACHE_MANIFEST__"]', JSON.stringify(urls, null, 2));
+  // Match the placeholder array wherever it sits in the template (own line or inline).
+  .replace(/\[\s*"__PRECACHE_MANIFEST__"\s*\]/, JSON.stringify(urls, null, 2));
 writeFileSync(swPath, sw);
 console.log(`[build-sw-precache] ${urls.length} files precached, cache chronographer-${hash}`);

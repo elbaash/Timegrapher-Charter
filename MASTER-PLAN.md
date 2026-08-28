@@ -3,7 +3,7 @@
 **Single source of truth for this project.** Supersedes `BUILD-PLAN.md` and `Handover.md`;
 `CLAUDE.md` points here. If anything elsewhere disagrees with this file, this file wins.
 
-_Last updated: 2026-07-07._
+_Last updated: 2026-08-27._
 
 > **Reading this cold?** Sections 1–3 tell you what the app is and who it's for. Section 6 is what's
 > already built. Sections 7–8 are what's left and in what order. To pick the next task: go to the
@@ -163,10 +163,44 @@ progress**, **share a PDF**, and **back up / restore** their data — no account
 
 ## 10. Open Decisions
 - Retire or keep the parked Expo project (`../timegrapher-mobile`)?
-- Where to host the install link (GitHub Pages / Vercel / Netlify static)?
+- ~~Where to host the install link (GitHub Pages / Vercel / Netlify static)?~~ **Decided 2026-08: GitHub Pages** — live at https://elbaash.github.io/Timegrapher-Charter/
 - Name / icon / light branding for the shared version.
 
-## 11. Living Status / Changelog
+## 11. Recovery Plan — Deploy & Offline Reliability (2026-08)
+
+> **Living checklist — keep statuses current; this is the working reference for the recovery.**
+> Why it exists: on 2026-08-24 GitHub Pages stopped publishing the `gh-pages` branch, the site
+> 404'd, and the (unpatched) service worker cached the GitHub 404 page as the app shell — so
+> installed phones showed a 404 page when taken offline. Sections below fix each layer so it
+> cannot silently recur.
+
+### 11.1 Get the site back online — ✅ DONE 2026-08-27
+- [x] Repo Settings → Pages → “Deploy from a branch” → `gh-pages` / root (owner action)
+- [x] Verified `https://elbaash.github.io/Timegrapher-Charter/` and `/sw.js` serve HTTP 200
+
+### 11.2 Harden the service worker (never breaks offline again) — ✅ DONE 2026-08-27
+- [x] Removed the stray `what` syntax error at the top of `public/sw.js`
+- [x] Navigation handler rejects non-OK responses — error pages are never cached as the shell
+- [x] Precache is per-file and fault-tolerant (one bad URL can’t abort the ~40 MB install; console warns)
+- [x] Source maps excluded from the precache manifest (weight)
+- [x] Rebuilt, redeployed via `npm run deploy`, live `sw.js` verified
+
+### 11.3 Reliable deployment — ✅ DONE 2026-08-27
+- [x] `npm run deploy` (`scripts/deploy-gh-pages.mjs`): build → replace `gh-pages` content with `out/` → force-push
+- [x] Build artifacts removed from `main` tracking; `.deploy-gh-pages/` git-ignored
+- [x] `main` pushed so GitHub matches the working tree
+
+### 11.4 Phone acceptance (Android) — 🟡 INITIAL PASS 2026-08-27, re-verify after deploy
+- [x] App installed to home screen from Chrome
+- [x] Airplane-mode test passed: app loads and works offline
+- [ ] After the patched deploy: open the app once online (self-updates the service worker), then re-run the airplane-mode test
+
+### 11.5 App polish (post-recovery, in this order)
+- [ ] Remove the duplicate Customer Name / Ref inputs from `uploader.tsx` (legacy from the customer-session era; watch name/ref already live on the New tab)
+- [ ] Review-step hint when a rate has no +/− sign
+- [ ] Component/E2E tests; stronger iOS storage-eviction nudges
+
+## 12. Living Status / Changelog
 Append dated entries; tick Milestones A–F as they land.
 
 - **2026-07-05** — Rebuilt as an offline PWA direction: removed inert Firebase, chose in-browser OCR,
@@ -211,3 +245,10 @@ Append dated entries; tick Milestones A–F as they land.
   OCR download trimmed ~13 MB (jsep-only wasm, re-verified); Vitest added with 10 passing smoke
   tests (`npm test`); `CLAUDE.md` rewritten to match the current app. Build green, 54-file
   precache.
+- **2026-08-24** — GitHub Pages sub-path deploy (`basePath` `/Timegrapher-Charter`, `gh-pages`
+  branch). The Pages source setting later lapsed → site 404'd → the deployed service worker cached
+  the GitHub 404 page as the app shell (no `res.ok` guard) → installed phones saw a 404 offline.
+- **2026-08-27** — **Recovery (see §11).** Pages re-pointed at `gh-pages` (site live); `sw.js`
+  hardened (non-OK navigations never cached; per-file fault-tolerant precache; stray syntax
+  removed); source maps excluded from precache; added `npm run deploy`; build artifacts removed
+  from `main` + git-ignored; Android install + airplane-mode acceptance test passed.

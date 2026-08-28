@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# deploy staging — build output belongs only on the gh-pages branch, never in main
+/.deploy-gh-pages/
+
 # production
 /build
 
