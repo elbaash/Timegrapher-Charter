@@ -3,13 +3,22 @@
 // it with the complete static-export file list (app shell, every JS chunk incl. the lazy OCR
 // chunks, CSS, fonts, icons, OCR models and wasm) and stamps the cache name with a content hash,
 // so every build gets a fresh cache and old ones are deleted on activate.
+//
+// Resilience rules (learned from the 2026-08 outage):
+// 1. Error pages are NEVER cached as the app shell — a broken host must not poison offline use.
+// 2. Precaching is per-file and fault-tolerant: one missing asset must not abort the whole install.
 
-const CACHE = "chronographer-1bc8ee2f32";
+const CACHE = "chronographer-7b5b608d6b";
+
+// The app shell is the sub-path root (GitHub Pages project site).
+const SHELL = "/Timegrapher-Charter/";
 
 const PRECACHE = [
   "/Timegrapher-Charter/",
   "/Timegrapher-Charter/.nojekyll",
   "/Timegrapher-Charter/404",
+  "/Timegrapher-Charter/_next/static/BhTDbn6vjraXAlfy9FBIA/_buildManifest.js",
+  "/Timegrapher-Charter/_next/static/BhTDbn6vjraXAlfy9FBIA/_ssgManifest.js",
   "/Timegrapher-Charter/_next/static/chunks/037f3a08.5e28d270726cdccb.js",
   "/Timegrapher-Charter/_next/static/chunks/139.8d54880d25bc452f.js",
   "/Timegrapher-Charter/_next/static/chunks/164f4fb6-91375d5a65762548.js",
@@ -40,8 +49,6 @@ const PRECACHE = [
   "/Timegrapher-Charter/_next/static/chunks/polyfills-42372ed130431b0a.js",
   "/Timegrapher-Charter/_next/static/chunks/webpack-ad7d36574588907b.js",
   "/Timegrapher-Charter/_next/static/css/bc3c657c3c43d40d.css",
-  "/Timegrapher-Charter/_next/static/d4dAYizF8bjbu8bNvlUSU/_buildManifest.js",
-  "/Timegrapher-Charter/_next/static/d4dAYizF8bjbu8bNvlUSU/_ssgManifest.js",
   "/Timegrapher-Charter/_next/static/media/19cfc7226ec3afaa-s.woff2",
   "/Timegrapher-Charter/_next/static/media/21350d82a1f187e9-s.woff2",
   "/Timegrapher-Charter/_next/static/media/8e9860b6e62d6359-s.woff2",
@@ -66,7 +73,23 @@ const PRECACHE = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)).then(() => self.skipWaiting()),
+    caches
+      .open(CACHE)
+      .then(async (cache) => {
+        // Add one file at a time so a single missing/broken URL can't abort the whole install
+        // (cache.addAll is all-or-nothing, and the manifest is ~40 MB of models + wasm).
+        const failed = [];
+        for (const url of PRECACHE) {
+          try {
+            await cache.add(url);
+          } catch {
+            failed.push(url);
+          }
+        }
+        if (failed.length) console.warn("[sw] precache skipped:", failed);
+        if (!(await cache.match(SHELL))) console.error("[sw] app shell failed to precache — offline will not work");
+      })
+      .then(() => self.skipWaiting()),
   );
 });
 
@@ -90,11 +113,14 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((res) => {
+          // A server error page (e.g. 404 when hosting is down) must NOT be shown or cached —
+          // fall back to the cached shell so the installed app keeps working.
+          if (!res.ok) throw new Error(`navigation failed: ${res.status}`);
           const copy = res.clone();
-          caches.open(CACHE).then((cache) => cache.put("/Timegrapher-Charter/", copy));
+          caches.open(CACHE).then((cache) => cache.put(SHELL, copy));
           return res;
         })
-        .catch(() => caches.match("/Timegrapher-Charter/")),
+        .catch(() => caches.match(SHELL)),
     );
     return;
   }
