@@ -8,7 +8,7 @@
 // 1. Error pages are NEVER cached as the app shell — a broken host must not poison offline use.
 // 2. Precaching is per-file and fault-tolerant: one missing asset must not abort the whole install.
 
-const CACHE = "chronographer-1da6b77b77";
+const CACHE = "chronographer-7c12ee8096";
 
 // The app shell is the sub-path root (GitHub Pages project site).
 const SHELL = "/Timegrapher-Charter/";
@@ -17,8 +17,6 @@ const PRECACHE = [
   "/Timegrapher-Charter/",
   "/Timegrapher-Charter/.nojekyll",
   "/Timegrapher-Charter/404",
-  "/Timegrapher-Charter/_next/static/C8Shop1l_K4KAW3itste-/_buildManifest.js",
-  "/Timegrapher-Charter/_next/static/C8Shop1l_K4KAW3itste-/_ssgManifest.js",
   "/Timegrapher-Charter/_next/static/chunks/037f3a08.5e28d270726cdccb.js",
   "/Timegrapher-Charter/_next/static/chunks/139.8d54880d25bc452f.js",
   "/Timegrapher-Charter/_next/static/chunks/164f4fb6-91375d5a65762548.js",
@@ -38,7 +36,7 @@ const PRECACHE = [
   "/Timegrapher-Charter/_next/static/chunks/ad2866b8.635304a38afc0b68.js",
   "/Timegrapher-Charter/_next/static/chunks/app/_not-found/page-30371f3ddbfef58e.js",
   "/Timegrapher-Charter/_next/static/chunks/app/layout-5486beff2a70eafd.js",
-  "/Timegrapher-Charter/_next/static/chunks/app/page-042d7cea76d6a4d1.js",
+  "/Timegrapher-Charter/_next/static/chunks/app/page-f364fa11d5cc3a58.js",
   "/Timegrapher-Charter/_next/static/chunks/bc98253f.d6fc8a0138855acd.js",
   "/Timegrapher-Charter/_next/static/chunks/fc51dc41.f06114bf980ad352.js",
   "/Timegrapher-Charter/_next/static/chunks/framework-1ce91eb6f9ecda85.js",
@@ -58,6 +56,8 @@ const PRECACHE = [
   "/Timegrapher-Charter/_next/static/media/e4af272ccee01ff0-s.p.woff2",
   "/Timegrapher-Charter/_next/static/media/ort-wasm-simd-threaded.jsep.c6bc439b.wasm",
   "/Timegrapher-Charter/_next/static/media/ort.bundle.min.15369b28.mjs",
+  "/Timegrapher-Charter/_next/static/v1AOdAjXf_s6CvFV1Bi9F/_buildManifest.js",
+  "/Timegrapher-Charter/_next/static/v1AOdAjXf_s6CvFV1Bi9F/_ssgManifest.js",
   "/Timegrapher-Charter/favicon.ico",
   "/Timegrapher-Charter/icons/icon-192.png",
   "/Timegrapher-Charter/icons/icon-512.png",
