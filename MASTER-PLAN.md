@@ -274,3 +274,13 @@ Append dated entries; tick Milestones A–F as they land.
   build artifacts removed from `main` + git-ignored; rebuilt + redeployed + live-verified
   (commit `d1328c6`, cache `chronographer-7b5b608d6b`); Android install + airplane-mode
   acceptance test passed. Remaining: §11.4 re-verify on phone, then §11.5 polish.
+- **2026-09-03** — Repo professionalised: end-user download/use guide (`docs/how-to-download-and-use.md`),
+  MIT LICENSE (repo is public), README hero with live-app link/badges/TOC/screenshots, repo
+  description + website + topics set (commit `5e9b247`).
+- **2026-09-03** — **Regulation calculator added (5th top tab, "Regulate").** Enter per-position
+  rates (manual rows or one-tap import from the workspace) → prominent current average → editable
+  target (default +5 s/d) → live-recalculated regulator adjustment ("Speed up by X s/d") with
+  projected new rate per position and the new average (= target). Pure math in `src/lib/regulation.ts`
+  with 16 Vitest cases (`src/lib/regulation.test.ts`), incl. the spec example [+24, −46] @ +5 →
+  avg −11, adj +16, projected +40/−30. Also shows spread (unchanged by a uniform move) with a
+  poising note. Tests 26/26, typecheck + build green.

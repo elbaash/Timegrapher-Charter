@@ -7,6 +7,7 @@ import { ReadingsTable } from "@/components/readings-table";
 import { ReadingsView } from "@/components/readings-view";
 import { WatchCompare } from "@/components/watch-compare";
 import { ManualEntryForm } from "@/components/manual-entry-form";
+import { RegulateCalculator } from "@/components/regulate-calculator";
 import { Faq } from "@/components/faq";
 import { OnboardingDialog } from "@/components/onboarding-dialog";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TimegrapherReading, AnalyzedImage, TimegrapherReadingData, Position, POSITIONS, Watch } from "@/types";
 import { loadWatches, saveWatches, addTableToWatches, buildBackup, parseBackup, mergeWatches, requestPersistentStorage } from "@/lib/watch-store";
-import { Trash2, FilePlus, ChevronRight, ChevronLeft, Check, X, Watch as WatchIcon, HelpCircle, PlusCircle, Download, Upload, FileText } from "lucide-react";
+import { Trash2, FilePlus, ChevronRight, ChevronLeft, Check, X, Watch as WatchIcon, HelpCircle, PlusCircle, Download, Upload, FileText, Gauge } from "lucide-react";
 import { buildTablePdf, buildComparisonPdf, sharePdf, reportFilename } from "@/lib/report";
 import type { ReadingsTable as ReadingsTableType } from "@/types";
 import { Input } from "@/components/ui/input";
@@ -222,9 +223,10 @@ export default function Home() {
       <AppHeader />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-background border rounded-lg p-1">
+          <TabsList className="grid w-full grid-cols-5 bg-background border rounded-lg p-1">
             <TabsTrigger value="new" className="data-[state=active]:bg-muted"><PlusCircle className="mr-2 h-4 w-4 hidden sm:inline" />New</TabsTrigger>
             <TabsTrigger value="review" disabled={extractedData.length === 0} className="data-[state=active]:bg-muted">Review</TabsTrigger>
+            <TabsTrigger value="regulate" className="data-[state=active]:bg-muted"><Gauge className="mr-2 h-4 w-4 hidden sm:inline" />Regulate</TabsTrigger>
             <TabsTrigger value="watches" className="data-[state=active]:bg-muted"><WatchIcon className="mr-2 h-4 w-4 hidden sm:inline" />Watches</TabsTrigger>
             <TabsTrigger value="faq" className="data-[state=active]:bg-muted"><HelpCircle className="mr-2 h-4 w-4 hidden sm:inline" />FAQ</TabsTrigger>
           </TabsList>
@@ -342,6 +344,10 @@ export default function Home() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="regulate">
+              <RegulateCalculator workspaceReadings={activeReadings} />
             </TabsContent>
 
             <TabsContent value="watches">

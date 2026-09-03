@@ -38,6 +38,7 @@
 5. **Regulate** the watch, scan again, and **compare progress** across all attempts in a position × attempt grid.
 6. **Share** a PDF report of any dated table or the full comparison via the phone's share sheet.
 7. **Back up & restore** all your watches and history as a JSON file — your data is never locked in.
+8. **Regulate with maths on your side** — the built-in regulation calculator takes your per-position rates (typed or one-tap imported from the workspace), shows the current average, and tells you exactly how far to move the regulator to land on your target average, with the projected new rate for every position.
 
 The 6-position order matches the Weishi machine's printed labels: **Dial Down → Crown Up → Crown Down → Crown Left → Crown Right → Dial Up**. Positions are auto-labelled in this order; you can edit them before saving.
 
