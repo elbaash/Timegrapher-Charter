@@ -284,3 +284,7 @@ Append dated entries; tick Milestones A–F as they land.
   with 16 Vitest cases (`src/lib/regulation.test.ts`), incl. the spec example [+24, −46] @ +5 →
   avg −11, adj +16, projected +40/−30. Also shows spread (unchanged by a uniform move) with a
   poising note. Tests 26/26, typecheck + build green.
+- **2026-09-03** — Regulation calculator reachable from saved history: each dated table in a watch's
+  Timeline got a **Regulate** button → loads that table's rates (position-labelled) into the Regulate
+  tab via a `prefill` prop (fresh object per click, so repeat clicks reload). Tables without readable
+  rates toast a warning instead.

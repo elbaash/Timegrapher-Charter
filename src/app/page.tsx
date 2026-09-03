@@ -7,7 +7,8 @@ import { ReadingsTable } from "@/components/readings-table";
 import { ReadingsView } from "@/components/readings-view";
 import { WatchCompare } from "@/components/watch-compare";
 import { ManualEntryForm } from "@/components/manual-entry-form";
-import { RegulateCalculator } from "@/components/regulate-calculator";
+import { RegulateCalculator, type RegulatePrefill } from "@/components/regulate-calculator";
+import { parseRate } from "@/lib/regulation";
 import { Faq } from "@/components/faq";
 import { OnboardingDialog } from "@/components/onboarding-dialog";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ export default function Home() {
   const [detailView, setDetailView] = useState<"timeline" | "compare">("timeline");
   const [isHydrated, setIsHydrated] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [regulatePrefill, setRegulatePrefill] = useState<RegulatePrefill | null>(null);
 
   const { toast } = useToast();
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -118,6 +120,31 @@ export default function Home() {
   const handleReviewCancel = () => {
     setExtractedData([]);
     setActiveTab("new");
+  };
+
+  // Load a saved table's rates into the Regulate tab to plan the next regulation pass.
+  const handleRegulateFromTable = (table: ReadingsTableType) => {
+    const rows = table.readings
+      .filter((r) => parseRate(r.rate) !== null)
+      .map((r, i) => ({
+        id: `table-${table.id}-${i}`,
+        label: r.position === "Unknown" ? `Rate ${i + 1}` : r.position,
+        rate: r.rate,
+      }));
+    if (rows.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "No Rates to Use",
+        description: "This table has no readings with a readable rate.",
+      });
+      return;
+    }
+    setRegulatePrefill({ key: Date.now(), rows });
+    setActiveTab("regulate");
+    toast({
+      title: "Table Loaded",
+      description: `${rows.length} rate${rows.length === 1 ? "" : "s"} ready in the Regulate tab.`,
+    });
   };
 
   const handleExtractedDataChange = (index: number, field: keyof TimegrapherReadingData, value: string) => {
@@ -347,7 +374,7 @@ export default function Home() {
             </TabsContent>
 
             <TabsContent value="regulate">
-              <RegulateCalculator workspaceReadings={activeReadings} />
+              <RegulateCalculator workspaceReadings={activeReadings} prefill={regulatePrefill} />
             </TabsContent>
 
             <TabsContent value="watches">
@@ -387,9 +414,14 @@ export default function Home() {
                             <div className="flex items-center gap-2 text-sm font-medium">
                               <span className="text-muted-foreground">{format(new Date(table.createdAt), "PPp")}</span>
                               <span className="text-xs text-muted-foreground">— {table.readings.length} reading{table.readings.length === 1 ? '' : 's'}</span>
-                              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs ml-auto" onClick={() => handleShareTablePdf(selectedWatch, table)}>
-                                <FileText className="mr-1 h-3 w-3" /> Share PDF
-                              </Button>
+                              <div className="flex gap-1 ml-auto">
+                                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => handleRegulateFromTable(table)}>
+                                  <Gauge className="mr-1 h-3 w-3" /> Regulate
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => handleShareTablePdf(selectedWatch, table)}>
+                                  <FileText className="mr-1 h-3 w-3" /> Share PDF
+                                </Button>
+                              </div>
                             </div>
                             <ReadingsView readings={table.readings} />
                           </div>

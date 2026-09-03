@@ -4,7 +4,7 @@
 // workspace), set a target average, and get the required regulator adjustment plus the
 // projected new rates. Pure math lives in src/lib/regulation.ts (unit-tested).
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,15 +16,33 @@ import { cn } from "@/lib/utils";
 import type { TimegrapherReading } from "@/types";
 import { CheckCircle2, Download, Info, Plus, TrendingDown, TrendingUp, Trash2 } from "lucide-react";
 
-type RateRow = { id: string; label: string; rate: string };
+export type RateRow = { id: string; label: string; rate: string };
 
-export function RegulateCalculator({ workspaceReadings }: { workspaceReadings: TimegrapherReading[] }) {
+// A request to load rows into the calculator (e.g. a saved table from the Watches tab).
+// The parent creates a fresh object per request, so the same table can be reloaded on repeat clicks.
+export type RegulatePrefill = {
+  key: number;
+  rows: RateRow[];
+};
+
+export function RegulateCalculator({
+  workspaceReadings,
+  prefill,
+}: {
+  workspaceReadings: TimegrapherReading[];
+  prefill: RegulatePrefill | null;
+}) {
   const { toast } = useToast();
   const [rows, setRows] = useState<RateRow[]>([
     { id: "row-1", label: "Rate 1", rate: "" },
     { id: "row-2", label: "Rate 2", rate: "" },
   ]);
   const [target, setTarget] = useState("5");
+
+  // One-tap load of a saved table (or any external source) — new object identity per request.
+  useEffect(() => {
+    if (prefill) setRows(prefill.rows);
+  }, [prefill]);
 
   const targetNum = parseFloat(target.replace(",", "."));
   const validTarget = target.trim() !== "" && !Number.isNaN(targetNum);
