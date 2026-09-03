@@ -2,6 +2,31 @@
 
 **A free, offline, installable PWA for watchmakers.** Photograph a Weishi Timegrapher display and instantly turn the reading into structured data. Keep a dated regulation history per watch, compare progress across attempts, and share clean PDF reports — all on your phone, with no internet, no accounts, no per-scan cost.
 
+[**▶ Try the live app**](https://elbaash.github.io/Timegrapher-Charter/) &nbsp;·&nbsp; [**User guide — download & use**](docs/how-to-download-and-use.md)
+
+[![Live app](https://img.shields.io/badge/Live%20app-elbaash.github.io-success)](https://elbaash.github.io/Timegrapher-Charter/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+![OCR](https://img.shields.io/badge/OCR-on--device-orange)
+![Offline](https://img.shields.io/badge/works-offline-green)
+
+---
+
+## Contents
+
+- [What It Does](#what-it-does)
+- [Screenshots](#screenshots)
+- [How It Works](#how-it-works)
+- [Quick Start (Local Development)](#quick-start-local-development)
+- [Building & Testing the PWA](#building--testing-the-pwa)
+- [Deploying](#deploying)
+- [Installing as a PWA on Your Phone](#installing-as-a-pwa-on-your-phone)
+- [Project Structure](#project-structure)
+- [Tech Stack](#tech-stack)
+- [OCR Accuracy](#ocr-accuracy)
+- [Known Limitations](#known-limitations)
+- [Documentation](#documentation)
+- [License](#license)
+
 ---
 
 ## What It Does
@@ -15,6 +40,18 @@
 7. **Back up & restore** all your watches and history as a JSON file — your data is never locked in.
 
 The 6-position order matches the Weishi machine's printed labels: **Dial Down → Crown Up → Crown Down → Crown Left → Crown Right → Dial Up**. Positions are auto-labelled in this order; you can edit them before saving.
+
+---
+
+## Screenshots
+
+This is what you photograph — a Weishi No.1000 display (real photo from the OCR test set):
+
+<p align="center">
+  <img src="Timegrapher%20training%20images/Timegrapher/IMG_20260520_112019862_HDR.jpg" alt="Weishi timegrapher display showing Rate, Amplitude, Beat Error and Lift Angle" width="360" />
+</p>
+
+> 📷 **App screenshots coming soon** — the capture, review, watch history, and progress-comparison screens. (To add: drop PNGs into `docs/images/` and reference them here.)
 
 ---
 
@@ -118,6 +155,8 @@ Once deployed to an HTTPS host:
 
 The app will open in standalone mode (no browser chrome) and work fully offline after the first visit.
 
+> **End-user guide:** [docs/how-to-download-and-use.md](docs/how-to-download-and-use.md) — a plain-language download & usage guide for watchmakers (no dev knowledge required).
+
 ---
 
 ## Project Structure
@@ -198,6 +237,7 @@ PaddleOCR PP-OCRv4 achieves **~97% field accuracy** on real Weishi photos (bench
 
 ## Documentation
 
+- **[docs/how-to-download-and-use.md](docs/how-to-download-and-use.md)** — End-user guide: how watchmakers install the app and use it day-to-day.
 - **[MASTER-PLAN.md](MASTER-PLAN.md)** — Single source of truth: purpose, architecture, roadmap, changelog, and all milestone definitions of done.
 - **[CLAUDE.md](CLAUDE.md)** — Code-navigation detail: tech stack table, folder structure, conventions, dev scripts, and gotchas.
 - **[BUILD-PLAN.md](BUILD-PLAN.md)** — Historical build plan (superseded by MASTER-PLAN.md; kept for the OCR implementation log).
@@ -207,4 +247,6 @@ PaddleOCR PP-OCRv4 achieves **~97% field accuracy** on real Weishi photos (bench
 
 ## License
 
-This project is private. Contact the repository owner for licensing information.
+Released under the [MIT License](LICENSE) — free to use, modify, and redistribute with attribution.
+
+The OCR models (PaddleOCR PP-OCRv4) are subject to their own license terms from PaddlePaddle; they are fetched from the `onnxruntime-web`/`@gutenye/ocr-browser` packages at install time and are not redistributed in this repository.
