@@ -8,7 +8,7 @@
 // 1. Error pages are NEVER cached as the app shell — a broken host must not poison offline use.
 // 2. Precaching is per-file and fault-tolerant: one missing asset must not abort the whole install.
 
-const CACHE = "chronographer-7b5b608d6b";
+const CACHE = "chronographer-1da6b77b77";
 
 // The app shell is the sub-path root (GitHub Pages project site).
 const SHELL = "/Timegrapher-Charter/";
@@ -17,15 +17,15 @@ const PRECACHE = [
   "/Timegrapher-Charter/",
   "/Timegrapher-Charter/.nojekyll",
   "/Timegrapher-Charter/404",
-  "/Timegrapher-Charter/_next/static/BhTDbn6vjraXAlfy9FBIA/_buildManifest.js",
-  "/Timegrapher-Charter/_next/static/BhTDbn6vjraXAlfy9FBIA/_ssgManifest.js",
+  "/Timegrapher-Charter/_next/static/C8Shop1l_K4KAW3itste-/_buildManifest.js",
+  "/Timegrapher-Charter/_next/static/C8Shop1l_K4KAW3itste-/_ssgManifest.js",
   "/Timegrapher-Charter/_next/static/chunks/037f3a08.5e28d270726cdccb.js",
   "/Timegrapher-Charter/_next/static/chunks/139.8d54880d25bc452f.js",
   "/Timegrapher-Charter/_next/static/chunks/164f4fb6-91375d5a65762548.js",
   "/Timegrapher-Charter/_next/static/chunks/199.829cec104a19a84e.js",
+  "/Timegrapher-Charter/_next/static/chunks/254-4f19ca37bd1e6fad.js",
   "/Timegrapher-Charter/_next/static/chunks/255-7db27168c8424be6.js",
   "/Timegrapher-Charter/_next/static/chunks/2f0b94e8-ea60580ce276fab2.js",
-  "/Timegrapher-Charter/_next/static/chunks/335-3f9527c43e860e3a.js",
   "/Timegrapher-Charter/_next/static/chunks/407-ec2fd07bdd45f684.js",
   "/Timegrapher-Charter/_next/static/chunks/4bd1b696-409494caf8c83275.js",
   "/Timegrapher-Charter/_next/static/chunks/562.3f7099cdfd514d3e.js",
@@ -38,7 +38,7 @@ const PRECACHE = [
   "/Timegrapher-Charter/_next/static/chunks/ad2866b8.635304a38afc0b68.js",
   "/Timegrapher-Charter/_next/static/chunks/app/_not-found/page-30371f3ddbfef58e.js",
   "/Timegrapher-Charter/_next/static/chunks/app/layout-5486beff2a70eafd.js",
-  "/Timegrapher-Charter/_next/static/chunks/app/page-5c43596b31509fa6.js",
+  "/Timegrapher-Charter/_next/static/chunks/app/page-042d7cea76d6a4d1.js",
   "/Timegrapher-Charter/_next/static/chunks/bc98253f.d6fc8a0138855acd.js",
   "/Timegrapher-Charter/_next/static/chunks/fc51dc41.f06114bf980ad352.js",
   "/Timegrapher-Charter/_next/static/chunks/framework-1ce91eb6f9ecda85.js",
@@ -48,7 +48,7 @@ const PRECACHE = [
   "/Timegrapher-Charter/_next/static/chunks/pages/_error-a8479a8c7bc399cf.js",
   "/Timegrapher-Charter/_next/static/chunks/polyfills-42372ed130431b0a.js",
   "/Timegrapher-Charter/_next/static/chunks/webpack-ad7d36574588907b.js",
-  "/Timegrapher-Charter/_next/static/css/bc3c657c3c43d40d.css",
+  "/Timegrapher-Charter/_next/static/css/7a612ae422b36583.css",
   "/Timegrapher-Charter/_next/static/media/19cfc7226ec3afaa-s.woff2",
   "/Timegrapher-Charter/_next/static/media/21350d82a1f187e9-s.woff2",
   "/Timegrapher-Charter/_next/static/media/8e9860b6e62d6359-s.woff2",
