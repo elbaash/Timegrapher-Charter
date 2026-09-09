@@ -288,3 +288,9 @@ Append dated entries; tick Milestones A–F as they land.
   Timeline got a **Regulate** button → loads that table's rates (position-labelled) into the Regulate
   tab via a `prefill` prop (fresh object per click, so repeat clicks reload). Tables without readable
   rates toast a warning instead.
+- **2026-09-09** — Live batch-analysis progress: `handleAnalyze` in `uploader.tsx` switched from
+  `Promise.all` (all photos fighting one single-threaded wasm core, zero feedback) to a **sequential
+  loop** with a progress board — "Loading analysis engine… (first run only)" stage via newly exported
+  `getEngine()` from `ocr-paddle.ts`, then "Analyzing photo N of M" + % bar, per-thumbnail status
+  overlays (spinner ✓ ✗), and a **Cancel** button (checked between photos; keeps files). Per-photo
+  errors now no longer abort the whole batch.

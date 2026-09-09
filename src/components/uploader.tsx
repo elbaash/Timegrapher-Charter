@@ -4,7 +4,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { runPaddleOcr } from "@/lib/ocr-paddle";
+import { runPaddleOcr, getEngine } from "@/lib/ocr-paddle";
 import { UploadCloud, X, LoaderCircle, CheckCircle, Image as ImageIcon, Trash2, Crop as CropIcon, Camera } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -50,9 +50,21 @@ type FilePreview = {
   ocrUrl?: string; // tight crop of just the display, used for OCR (falls back to previewUrl)
 };
 
+// Per-photo status while a batch analysis runs, powering the live progress board.
+type FileStatus = "pending" | "working" | "ok" | "failed";
+
+type AnalysisProgress = {
+  stage: "loading-model" | "analyzing";
+  done: number;
+  total: number;
+  statuses: FileStatus[];
+};
+
 export function Uploader({ onDataExtracted, isProcessing, setProcessing }: UploaderProps) {
   const [files, setFiles] = useState<FilePreview[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [progress, setProgress] = useState<AnalysisProgress | null>(null);
+  const cancelRef = useRef(false);
   const [customerName, setCustomerName] = useState("");
   const [refNumber, setRefNumber] = useState("A");
 
@@ -174,56 +186,84 @@ export function Uploader({ onDataExtracted, isProcessing, setProcessing }: Uploa
   const handleAnalyze = async () => {
     if (files.length === 0) return;
     setProcessing(true);
-    
+    cancelRef.current = false;
+    const total = files.length;
+    const statuses: FileStatus[] = files.map(() => "pending");
+    setProgress({ stage: "loading-model", done: 0, total, statuses: [...statuses] });
+
     try {
-      const results: (AnalyzedImage | null)[] = await Promise.all(
-        files.map(async (filePreview) => {
+      // Warm up the OCR engine first so the model download/compile (first run only)
+      // shows as its own stage instead of looking like a frozen photo.
+      await getEngine();
+      setProgress({ stage: "analyzing", done: 0, total, statuses: [...statuses] });
+
+      // Sequential on purpose: the wasm engine is single-threaded, so parallel photos
+      // just fight over one core — one at a time gives real, advancing progress.
+      const successfulResults: AnalyzedImage[] = [];
+      for (let i = 0; i < total; i++) {
+        if (cancelRef.current) break;
+        const filePreview = files[i];
+        statuses[i] = "working";
+        setProgress({ stage: "analyzing", done: i, total, statuses: [...statuses] });
+        try {
           const { parsed } = await runPaddleOcr(filePreview.ocrUrl ?? filePreview.previewUrl);
           if (parsed.score === 0) {
+            statuses[i] = "failed";
             toast({
               variant: "destructive",
               title: `Couldn't read ${filePreview.file.name}`,
               description: "No readings detected — try a clearer photo or use Manual Entry.",
             });
-            return null; // Nothing usable extracted
+          } else {
+            // Position isn't on the display (it's on a paper/case), so it defaults to
+            // Unknown for the user to set in Review. liftAngle defaults to 52.
+            statuses[i] = "ok";
+            successfulResults.push({
+              imageUrl: filePreview.previewUrl,
+              data: {
+                rate: parsed.rate,
+                amplitude: parsed.amplitude,
+                beatError: parsed.beatError,
+                position: "Unknown",
+                liftAngle: parsed.liftAngle || "52",
+                customerName: customerName || "",
+                refNumber: refNumber || "",
+              },
+            });
           }
-          // Map parsed fields onto a reading. Position isn't on the display (it's on a paper/case),
-          // so it defaults to Unknown for the user to set in Review. liftAngle defaults to 52.
-          return {
-            imageUrl: filePreview.previewUrl,
-            data: {
-              rate: parsed.rate,
-              amplitude: parsed.amplitude,
-              beatError: parsed.beatError,
-              position: "Unknown",
-              liftAngle: parsed.liftAngle || "52",
-              customerName: customerName || "",
-              refNumber: refNumber || "",
-            },
-          };
-        })
-      );
-      
-      const successfulResults = results.filter((res): res is AnalyzedImage => res !== null);
+        } catch {
+          statuses[i] = "failed";
+          toast({
+            variant: "destructive",
+            title: `Couldn't read ${filePreview.file.name}`,
+            description: "Analysis failed on this photo — the rest will still be processed.",
+          });
+        }
+        setProgress({ stage: "analyzing", done: i + 1, total, statuses: [...statuses] });
+      }
 
-      if (successfulResults.length > 0) {
+      if (cancelRef.current) {
+        toast({
+          title: "Analysis Cancelled",
+          description: "Stopped with your photos kept — you can analyze them again any time.",
+        });
+      } else if (successfulResults.length > 0) {
         onDataExtracted(successfulResults);
         toast({
           title: "Analysis Complete",
-          description: `${successfulResults.length} of ${files.length} images analyzed successfully.`,
+          description: `${successfulResults.length} of ${total} images analyzed successfully.`,
           action: <div className="p-1 rounded-full bg-green-500"><CheckCircle className="h-5 w-5 text-white" /></div>,
         });
         clearAllFiles();
         setCustomerName("");
         setRefNumber("A");
       } else {
-         toast({
+        toast({
           variant: "destructive",
           title: "Analysis Failed",
           description: "Could not extract data from any of the images.",
         });
       }
-
     } catch (e: unknown) {
       const error = e instanceof Error ? e.message : "An unknown error occurred during batch analysis.";
       toast({
@@ -233,6 +273,7 @@ export function Uploader({ onDataExtracted, isProcessing, setProcessing }: Uploa
       });
     } finally {
       setProcessing(false);
+      setProgress(null);
     }
   };
 
@@ -286,6 +327,18 @@ export function Uploader({ onDataExtracted, isProcessing, setProcessing }: Uploa
             {files.map((file, index) => (
               <div key={index} className="relative aspect-square rounded-lg overflow-hidden border">
                 <Image src={file.ocrUrl ?? file.previewUrl} alt={`Preview ${index + 1}`} layout="fill" objectFit="cover" />
+                {progress && progress.statuses[index] && progress.statuses[index] !== "pending" && (
+                  <div className={cn(
+                    "absolute inset-0 z-10 flex items-center justify-center",
+                    progress.statuses[index] === "working" && "bg-black/40",
+                    progress.statuses[index] === "ok" && "bg-green-600/25",
+                    progress.statuses[index] === "failed" && "bg-destructive/25",
+                  )}>
+                    {progress.statuses[index] === "working" && <LoaderCircle className="h-8 w-8 animate-spin text-white drop-shadow" />}
+                    {progress.statuses[index] === "ok" && <CheckCircle className="h-8 w-8 text-green-600 drop-shadow" />}
+                    {progress.statuses[index] === "failed" && <X className="h-8 w-8 text-destructive drop-shadow" />}
+                  </div>
+                )}
                 <Button variant="destructive" size="icon" className="absolute top-1 right-1 z-10 h-6 w-6 rounded-full" onClick={() => removeFile(index)} disabled={isProcessing}>
                   <X className="h-3 w-3" />
                 </Button>
@@ -297,7 +350,7 @@ export function Uploader({ onDataExtracted, isProcessing, setProcessing }: Uploa
                 )}
               </div>
             ))}
-             {files.length < 6 && (
+             {files.length < 6 && !isProcessing && (
               <div
                 onClick={() => !isProcessing && fileInputRef.current?.click()}
                 className="flex items-center justify-center aspect-square rounded-lg border-2 border-dashed border-border cursor-pointer hover:border-primary transition-colors">
@@ -305,6 +358,35 @@ export function Uploader({ onDataExtracted, isProcessing, setProcessing }: Uploa
               </div>
             )}
           </div>
+          {progress && (
+            <div className="rounded-lg border bg-card p-4 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <LoaderCircle className="h-4 w-4 animate-spin text-primary" />
+                  {progress.stage === "loading-model"
+                    ? "Loading analysis engine… (first run only)"
+                    : `Analyzing photo ${Math.min(progress.done + 1, progress.total)} of ${progress.total}…`}
+                </div>
+                <span className="text-xs font-mono text-muted-foreground tabular-nums">
+                  {Math.round((progress.done / progress.total) * 100)}%
+                </span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-500"
+                  style={{ width: `${(progress.done / progress.total) * 100}%` }}
+                />
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">
+                  Runs privately on your device — each photo can take 10–30&nbsp;s.
+                </p>
+                <Button variant="outline" size="sm" className="h-7 shrink-0" onClick={() => { cancelRef.current = true; }}>
+                  <X className="mr-1 h-3 w-3" /> Cancel
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div

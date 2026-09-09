@@ -22,7 +22,7 @@ const MAX_EDGE = 1600; // detection input long-edge (speed vs accuracy)
 
 let enginePromise: Promise<OcrEngine> | null = null;
 
-async function getEngine(): Promise<OcrEngine> {
+export async function getEngine(): Promise<OcrEngine> {
   if (!enginePromise) {
     enginePromise = (async () => {
       const [{ default: Ocr }, ort] = await Promise.all([
