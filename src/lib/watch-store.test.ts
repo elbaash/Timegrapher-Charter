@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mergeWatches, parseBackup, buildBackup, addTableToWatches } from "./watch-store";
+import { mergeWatches, parseBackup, buildBackup, addTableToWatches, updateTableInWatches } from "./watch-store";
 import type { Watch, TimegrapherReading } from "@/types";
 
 const reading = (id: string): TimegrapherReading => ({
@@ -55,5 +55,27 @@ describe("addTableToWatches", () => {
     const next = addTableToWatches([], "New Watch", "X", [reading("r1")]);
     expect(next).toHaveLength(1);
     expect(next[0].tables).toHaveLength(1);
+  });
+});
+
+describe("updateTableInWatches", () => {
+  it("replaces one table's readings and leaves other watches/tables untouched", () => {
+    const existing = [watch("Omega", "A", ["t1", "t2"]), watch("Rolex", "B", ["t3"])];
+    const next = updateTableInWatches(existing, "w-Omega", "t1", [reading("r-edited")]);
+    expect(next[0].tables.find((t) => t.id === "t1")!.readings[0].id).toBe("r-edited");
+    expect(next[0].tables.find((t) => t.id === "t2")!.readings[0].id).toBe("t2-r");
+    expect(next[1]).toBe(existing[1]);
+  });
+
+  it("drops the table entirely when the edited readings list is empty", () => {
+    const existing = [watch("Omega", "A", ["t1", "t2"])];
+    const next = updateTableInWatches(existing, "w-Omega", "t1", []);
+    expect(next[0].tables.map((t) => t.id)).toEqual(["t2"]);
+  });
+
+  it("is a no-op for unknown watch or table ids", () => {
+    const existing = [watch("Omega", "A", ["t1"])];
+    expect(updateTableInWatches(existing, "nope", "t1", [])).toEqual(existing);
+    expect(updateTableInWatches(existing, "w-Omega", "nope", [])).toEqual(existing);
   });
 });

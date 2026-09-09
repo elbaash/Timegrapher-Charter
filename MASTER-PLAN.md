@@ -294,3 +294,8 @@ Append dated entries; tick Milestones A–F as they land.
   `getEngine()` from `ocr-paddle.ts`, then "Analyzing photo N of M" + % bar, per-thumbnail status
   overlays (spinner ✓ ✗), and a **Cancel** button (checked between photos; keeps files). Per-photo
   errors now no longer abort the whole batch.
+- **2026-09-09** — Editable saved history: each dated table in a watch's Timeline got an **Edit**
+  button → inline editable grid (`components/readings-edit.tsx`) to correct values/positions or
+  remove individual readings (trash icon per row), with Save/Cancel. Removing every reading deletes
+  the dated table. Persistence via new pure helper `updateTableInWatches` in `lib/watch-store.ts`
+  (3 new vitest cases, 29/29 green). User guide updated.

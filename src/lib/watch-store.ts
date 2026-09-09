@@ -95,6 +95,23 @@ export function addTableToWatches(
   return [created, ...watches];
 }
 
+// Replace one dated table's readings with an edited list (values corrected or rows removed).
+// If no readings remain, the empty table is dropped from the watch entirely.
+export function updateTableInWatches(
+  watches: Watch[],
+  watchId: string,
+  tableId: string,
+  readings: TimegrapherReading[],
+): Watch[] {
+  return watches.map((w) => {
+    if (w.id !== watchId) return w;
+    const tables = readings.length === 0
+      ? w.tables.filter((t) => t.id !== tableId)
+      : w.tables.map((t) => (t.id === tableId ? { ...t, readings } : t));
+    return { ...w, tables };
+  });
+}
+
 export function buildBackup(watches: Watch[]): Backup {
   return { app: "chronographer", schema: BACKUP_SCHEMA, exportedAt: new Date().toISOString(), watches };
 }

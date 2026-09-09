@@ -174,6 +174,7 @@ src/
 │   ├── manual-entry-form.tsx # Zod-validated fallback entry
 │   ├── readings-table.tsx    # Active-session table + print/share/save actions
 │   ├── readings-view.tsx     # Read-only table used in the watch timeline
+│   ├── readings-edit.tsx     # Inline edit mode for a saved table (fix values / remove readings)
 │   ├── watch-compare.tsx     # Progress grid: position × every attempt, per metric
 │   ├── sw-register.tsx       # Registers /sw.js (production only)
 │   ├── app-header.tsx / faq.tsx

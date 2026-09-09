@@ -73,7 +73,7 @@ Adjust the watch, then run Steps 2–4 again. Each save adds a new dated table, 
 
 Open the **Watches** tab and select your watch:
 
-- **Timeline** — scroll every dated table you've saved (evidence of the work done).
+- **Timeline** — scroll every dated table you've saved (evidence of the work done). Tap **Edit** on any table to correct a number or remove readings you don't want — removing every reading deletes that dated table.
 - **Compare** — a grid of position × attempt for each metric, so you can watch the numbers converge.
 - **Share** — send a clean PDF report of any dated table (or the full comparison) to a customer or colleague via your phone's share sheet.
 
@@ -93,7 +93,7 @@ All data lives **only on your phone** — there is no cloud. Phones get lost, an
 ## 4. The Tabs at a Glance
 
 | Tab | What it's for |
-|---|---|
+| --- | --- |
 | **New** | Photograph displays (Batch photos) or type readings in by hand (Manual) |
 | **Review** | Check and correct what the app read before saving |
 | **Watches** | Your watch archive: dated history, progress comparison, PDF reports, backup & restore |
@@ -104,7 +104,7 @@ All data lives **only on your phone** — there is no cloud. Phones get lost, an
 ## 5. Quick Troubleshooting
 
 | Problem | Fix |
-|---|---|
+| --- | --- |
 | App won't install / no "Add to Home Screen" | Make sure you're using Chrome (Android) or Safari (iPhone), and that you're online |
 | Blank fields (amber) after a scan | Tap crop and frame just the screen, retake the photo closer and straight-on, or fill the field in by hand |
 | Rate sign (+/−) looks wrong | Correct it in Review before saving — this is the most common OCR slip |

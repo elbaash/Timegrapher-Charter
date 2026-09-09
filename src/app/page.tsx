@@ -5,6 +5,7 @@ import { AppHeader } from "@/components/app-header";
 import { Uploader } from "@/components/uploader";
 import { ReadingsTable } from "@/components/readings-table";
 import { ReadingsView } from "@/components/readings-view";
+import { EditableReadingsView } from "@/components/readings-edit";
 import { WatchCompare } from "@/components/watch-compare";
 import { ManualEntryForm } from "@/components/manual-entry-form";
 import { RegulateCalculator, type RegulatePrefill } from "@/components/regulate-calculator";
@@ -15,8 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TimegrapherReading, AnalyzedImage, TimegrapherReadingData, Position, POSITIONS, Watch } from "@/types";
-import { loadWatches, saveWatches, addTableToWatches, buildBackup, parseBackup, mergeWatches, requestPersistentStorage } from "@/lib/watch-store";
-import { Trash2, FilePlus, ChevronRight, ChevronLeft, Check, X, Watch as WatchIcon, HelpCircle, PlusCircle, Download, Upload, FileText, Gauge } from "lucide-react";
+import { loadWatches, saveWatches, addTableToWatches, updateTableInWatches, buildBackup, parseBackup, mergeWatches, requestPersistentStorage } from "@/lib/watch-store";
+import { Trash2, FilePlus, ChevronRight, ChevronLeft, Check, X, Watch as WatchIcon, HelpCircle, PlusCircle, Download, Upload, FileText, Gauge, Pencil } from "lucide-react";
 import { buildTablePdf, buildComparisonPdf, sharePdf, reportFilename } from "@/lib/report";
 import type { ReadingsTable as ReadingsTableType } from "@/types";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,7 @@ export default function Home() {
   const [extractedData, setExtractedData] = useState<AnalyzedImage[]>([]);
   const [selectedWatchId, setSelectedWatchId] = useState<string | null>(null);
   const [detailView, setDetailView] = useState<"timeline" | "compare">("timeline");
+  const [editingTableId, setEditingTableId] = useState<string | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [regulatePrefill, setRegulatePrefill] = useState<RegulatePrefill | null>(null);
@@ -184,6 +186,18 @@ export default function Home() {
     setWatches(prev => prev.filter(w => w.id !== watchId));
     if (selectedWatchId === watchId) setSelectedWatchId(null);
     toast({ variant: "destructive", title: "Watch Deleted", description: "The watch and its history were removed." });
+  };
+
+  // Persist edits to one dated table (corrected values and/or removed readings). If every reading
+  // was removed the table itself is dropped from the watch's history.
+  const handleSaveTableEdits = (watchId: string, tableId: string, readings: TimegrapherReading[]) => {
+    setWatches(prev => updateTableInWatches(prev, watchId, tableId, readings));
+    setEditingTableId(null);
+    if (readings.length === 0) {
+      toast({ variant: "destructive", title: "Table Deleted", description: "All readings were removed, so the dated table was deleted." });
+    } else {
+      toast({ title: "Table Updated", description: `Saved ${readings.length} reading${readings.length === 1 ? "" : "s"} in this dated table.` });
+    }
   };
 
   // Download the whole archive as a dated JSON backup file.
@@ -382,7 +396,7 @@ export default function Home() {
                 <Card>
                   <CardHeader>
                     <div className="flex items-center gap-3">
-                      <Button variant="ghost" size="sm" onClick={() => setSelectedWatchId(null)}>
+                      <Button variant="ghost" size="sm" onClick={() => { setSelectedWatchId(null); setEditingTableId(null); }}>
                         <ChevronLeft className="mr-1 h-4 w-4" /> All Watches
                       </Button>
                     </div>
@@ -414,16 +428,29 @@ export default function Home() {
                             <div className="flex items-center gap-2 text-sm font-medium">
                               <span className="text-muted-foreground">{format(new Date(table.createdAt), "PPp")}</span>
                               <span className="text-xs text-muted-foreground">— {table.readings.length} reading{table.readings.length === 1 ? '' : 's'}</span>
-                              <div className="flex gap-1 ml-auto">
-                                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => handleRegulateFromTable(table)}>
-                                  <Gauge className="mr-1 h-3 w-3" /> Regulate
-                                </Button>
-                                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => handleShareTablePdf(selectedWatch, table)}>
-                                  <FileText className="mr-1 h-3 w-3" /> Share PDF
-                                </Button>
-                              </div>
+                              {editingTableId !== table.id && (
+                                <div className="flex gap-1 ml-auto">
+                                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setEditingTableId(table.id)}>
+                                    <Pencil className="mr-1 h-3 w-3" /> Edit
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => handleRegulateFromTable(table)}>
+                                    <Gauge className="mr-1 h-3 w-3" /> Regulate
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => handleShareTablePdf(selectedWatch, table)}>
+                                    <FileText className="mr-1 h-3 w-3" /> Share PDF
+                                  </Button>
+                                </div>
+                              )}
                             </div>
-                            <ReadingsView readings={table.readings} />
+                            {editingTableId === table.id ? (
+                              <EditableReadingsView
+                                readings={table.readings}
+                                onSave={(readings) => handleSaveTableEdits(selectedWatch.id, table.id, readings)}
+                                onCancel={() => setEditingTableId(null)}
+                              />
+                            ) : (
+                              <ReadingsView readings={table.readings} />
+                            )}
                           </div>
                         ))}
                         {selectedWatch.tables.length === 0 && (
