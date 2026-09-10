@@ -8,7 +8,7 @@
 // 1. Error pages are NEVER cached as the app shell — a broken host must not poison offline use.
 // 2. Precaching is per-file and fault-tolerant: one missing asset must not abort the whole install.
 
-const CACHE = "chronographer-6de9b133cf";
+const CACHE = "chronographer-6d5df98bc4";
 
 // The app shell is the sub-path root (GitHub Pages project site).
 const SHELL = "/Timegrapher-Charter/";
@@ -17,6 +17,8 @@ const PRECACHE = [
   "/Timegrapher-Charter/",
   "/Timegrapher-Charter/.nojekyll",
   "/Timegrapher-Charter/404",
+  "/Timegrapher-Charter/_next/static/3H14vJMqrVckXYu3NbNTK/_buildManifest.js",
+  "/Timegrapher-Charter/_next/static/3H14vJMqrVckXYu3NbNTK/_ssgManifest.js",
   "/Timegrapher-Charter/_next/static/chunks/037f3a08.5e28d270726cdccb.js",
   "/Timegrapher-Charter/_next/static/chunks/139.8d54880d25bc452f.js",
   "/Timegrapher-Charter/_next/static/chunks/164f4fb6-91375d5a65762548.js",
@@ -47,8 +49,6 @@ const PRECACHE = [
   "/Timegrapher-Charter/_next/static/chunks/polyfills-42372ed130431b0a.js",
   "/Timegrapher-Charter/_next/static/chunks/webpack-ad7d36574588907b.js",
   "/Timegrapher-Charter/_next/static/css/92f72feee612572e.css",
-  "/Timegrapher-Charter/_next/static/k_fLj98L-5FZO5CT2c8vP/_buildManifest.js",
-  "/Timegrapher-Charter/_next/static/k_fLj98L-5FZO5CT2c8vP/_ssgManifest.js",
   "/Timegrapher-Charter/_next/static/media/19cfc7226ec3afaa-s.woff2",
   "/Timegrapher-Charter/_next/static/media/21350d82a1f187e9-s.woff2",
   "/Timegrapher-Charter/_next/static/media/8e9860b6e62d6359-s.woff2",
